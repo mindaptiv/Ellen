@@ -5,13 +5,20 @@
 
 //includes
 #include "Ellen.h"
-#include <string>
 #include <iostream>
 #include <dlfcn.h>
+#include <stdio.h>
+#include <pwd.h>
+#include <unistd.h>
+#include <string>
+
+using namespace std;
 
 //Producers
 void produceUsername(struct cylonStruct& et)
 {
+
+
 	//attempt to open library
 	void* handle = dlopen("libc.so.6", RTLD_LAZY);
 
@@ -19,58 +26,33 @@ void produceUsername(struct cylonStruct& et)
 	if(!handle)
 	{
 		//LOG
-		std::cout<<"LIBC failed to open\n";
+		cout<<"LIBC failed to open\n";
 
 		//TODO set name to default?
 	}
 	else
 	{
 		//LOG
-		std::cout<<"LIBC successfully loaded\n";
+		cout<<"LIBC successfully loaded"<<endl;
 
 		//clear errors
 		dlerror();
 
-		//define method type
-		typedef char* (*getLogin_t)();
+		register struct passwd *pw;
+		register uid_t uid;
 
-		//try to load getlogin()
-		getLogin_t getLogin = (getLogin_t) dlsym(handle, "getlogin");
-		char* error = dlerror();
-
-		if (error)
+		uid = geteuid();
+		pw = getpwuid(uid);
+		if (pw)
 		{
-			//LOG
-			std::cout<<"Could not find getLogin()\n";
+			const char* charUname = pw->pw_name;
+			string strUname(charUname);
+			et.username = strUname;
+			cout<<et.username<<endl;
+		}//END if pw
+	}//END elif !handle
 
-			//TODO set default name?
-		}
-		else
-		{
-			//LOG
-			std::cout<<"Found getlogin()!\n";
-
-			//Call getlogin()
-			char* charStarName = getLogin();
-
-			if(charStarName != NULL)
-			{
-				//Set username
-				std::string uname(charStarName);
-				et.username = uname;
-			}
-			else
-			{
-				//username null, set to default
-				et.username = "0";
-			}
-
-
-		}//END else found getlogin
-
-		dlclose(handle);
-	}//END else lib loaded
-	std::cout<<et.username + "\n";
+	dlclose(handle);
 }//END produceUsername
 
 void produceDeviceName(struct cylonStruct& et)
@@ -96,17 +78,17 @@ void produceTimeZone(struct cylonStruct& et)
 void produceProcessorInfo(struct cylonStruct& et)
 {
 
-}//END produceProcessorInfo
+} //END produceProcessorInfo
 
 void produceMemoryInfo(struct cylonStruct& et)
 {
 
-}//END produceMemoryInfo
+} //END produceMemoryInfo
 
 void produceDeviceInfo(struct cylonStruct& et)
 {
 
-}//END produceDeviceInfo
+} //END produceDeviceInfo
 
 //END PRODUCERS
 
