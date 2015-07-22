@@ -2,17 +2,52 @@
  * ellen.h
  *
  *  Created on: Jul 16, 2015
- *      Author: mindmin
+ *      Author: josh@mindaptiv.com
  */
 
 #ifndef ELLEN_H_
 #define ELLEN_H_
 
-
 //includes
 #include "Cylon.h"
+#include <string>
+
+using namespace std;
+
+//Structs
+//Function loaded from library
+struct libFunc
+{
+	string funcName;
+	void*  funcAddr;
+};
+
+//Dynamically linked library
+struct dynLib
+{
+	string libName;
+	int    versionNumber;
+	void*  libAddr;
+	libFunc* functions; //TODO: static note?
+};
+
+enum libraries
+{
+	error,
+	libc,
+	count,
+};
+//END structs
+
+//Variables
+dynLib allLibs[libraries::count];
+//END Variables
 
 //Method Declaration
+//Dynamic Linking
+void openLibs();
+void closeLibs();
+
 //Producers
 void produceUsername(struct cylonStruct& et);
 void produceDeviceName(struct cylonStruct& et);

@@ -10,9 +10,6 @@
 #include <stdio.h>
 #include <pwd.h>
 #include <unistd.h>
-#include <string>
-
-using namespace std;
 
 //Producers
 void produceUsername(struct cylonStruct& et)
@@ -38,8 +35,8 @@ void produceUsername(struct cylonStruct& et)
 		//clear errors
 		dlerror();
 
-		register struct passwd *pw;
-		register uid_t uid;
+		struct passwd* pw;
+	    uid_t uid;
 
 		uid = geteuid();
 		pw = getpwuid(uid);
