@@ -18,14 +18,14 @@ using namespace std;
 //Function loaded from library
 struct libFunc
 {
-	string funcName;
+	char*  funcName;
 	void*  funcAddr;
 };
 
 //Dynamically linked library
 struct dynLib
 {
-	string libName;
+	char*  libName;
 	int    versionNumber;
 	void*  libAddr;
 	libFunc* functions; //TODO: static note?
@@ -35,16 +35,17 @@ enum libraries
 {
 	error,
 	libc,
-	count,
+	libCount
 };
 //END structs
 
 //Variables
-dynLib allLibs[libraries::count];
+extern dynLib allLibs[libCount];
 //END Variables
 
 //Method Declaration
 //Dynamic Linking
+void fillTable();
 void openLibs();
 void closeLibs();
 
