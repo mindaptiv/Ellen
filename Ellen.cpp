@@ -14,37 +14,63 @@
 //Dyanamic Library Stuff
 //Constant for how many versions in the future we look forward for checking lib #'s
 int constant = 5;
+dynLib allLibs[libCount];
+
+libFunc libcFunctions[LIBC_FUNCTION_COUNT] =
+{
+		{
+			LIBC_GETEUID,
+			NULL
+		},
+
+		{
+			"",
+			NULL
+		},
+
+		{
+			"",
+			NULL
+		},
+
+		{
+			"",
+			NULL
+		}
+};//END libcFunctions
 
 void fillTable()
 {
+	//Fill allLibs with info
+	allLibs[libc].libName = LIBC_LIB_NAME;
+	allLibs[libc].libAddr = NULL;
+	allLibs[libc].versionNumber = LIBC_LATEST_VERSION;
+	allLibs[libc].funcCount = LIBC_FUNCTION_COUNT;
+	allLibs[libc].functions = libcFunctions;
 
-}
+
+}//END method
 
 void openLibs()
 {
 	for (int i = 0; i< libCount; i++)
 	{
 		//Grab the current library
-		//TODO: wrong?
-		dynLib* current = allLibs[i];
+		dynLib current = allLibs[i];
 
 		//Iterate over versions until we find one that successfully dlopens
-		for (int j = current->versionNumber + constant; j >= 0; j++)
+		for (int j = current.versionNumber + constant; j >= 0; j++)
 		{
 			//attempt dlopen
-			current->libAddr = dlopen(current->libName, RTLD_LAZY);
+			current.libAddr = dlopen(current.libName, RTLD_LAZY);
 
-			if(current != NULL)
+			if(current.libAddr != NULL)
 			{
 				//Grab the functions
-				libFunc* functions = current->functions;
-
-				/*
-				for (int k = 0; TODO: what goes here?/wrong?; k++ )
+				for (int k = 0; k < current.funcCount; k++ )
 				{
-					functions[j] = dlsym(current->libAddr, functions[j].funcName);
-				}//END function grabbing for
-				*/
+					current.functions[k].funcAddr = dlsym(current.libAddr, current.functions[k].funcName);
+				}//END inner FOR
 
 				//successfully grabbed lib and functions
 				break;
@@ -59,10 +85,10 @@ void closeLibs()
 	for (int i = 0; i < libCount; i++)
 	{
 		//grab current library
-		dynLib* current = allLibs[i];
+		dynLib current = allLibs[i];
 
 		//close it
-		int close = dlclose(current->libAddr);
+		int close = dlclose(current.libAddr);
 
 		if (close != 0)
 		{

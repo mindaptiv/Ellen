@@ -5,6 +5,8 @@
  *      Author: josh@mindaptiv.com
  */
 
+#pragma once
+
 #ifndef ELLEN_H_
 #define ELLEN_H_
 
@@ -14,34 +16,37 @@
 
 using namespace std;
 
+//Constants
+//The number of methods to load for a given library
+static const int LIBC_FUNCTION_COUNT = 4;
+static const int LIBC_LATEST_VERSION = 6;
+static const char* LIBC_LIB_NAME = "libc.so";
+static const char* LIBC_GETEUID = "geteuid";
+
 //Structs
 //Function loaded from library
 struct libFunc
 {
-	char*  funcName;
+	const char*  funcName;
 	void*  funcAddr;
 };
 
 //Dynamically linked library
 struct dynLib
 {
-	char*  libName;
-	int    versionNumber;
+	const char*  libName;
 	void*  libAddr;
-	libFunc* functions; //TODO: static note?
+	int    versionNumber;
+	int    funcCount;
+	libFunc* functions;
 };
 
 enum libraries
 {
-	error,
 	libc,
 	libCount
 };
 //END structs
-
-//Variables
-extern dynLib allLibs[libCount];
-//END Variables
 
 //Method Declaration
 //Dynamic Linking
