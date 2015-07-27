@@ -11,12 +11,25 @@
 #define ELLEN_H_
 
 //includes
+//custom
 #include "Cylon.h"
-#include <string>
 
-using namespace std;
+
+//included in Linux Standard Base
+#include <stdio.h> //libc
+#include <pwd.h>   //libc
+#include <unistd.h> //libc
+
+#include <iostream> //libstdc++
+
+//other
+#include <dlfcn.h>
+#include <sstream>
 
 //Constants
+//Number of versions beyond "Latest Version" of a library to check for, in case if a library updates after release
+static const int NUMBER_OF_VERSIONS_TO_LOOK_FORWARD = 5;
+
 //The number of methods to load for a given library
 static const int LIBC_FUNCTION_COUNT = 4;
 static const int LIBC_LATEST_VERSION = 6;

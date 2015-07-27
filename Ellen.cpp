@@ -4,16 +4,14 @@
 //josh@mindaptiv.com
 
 //includes
+//custom
 #include "Ellen.h"
-#include <iostream>
-#include <dlfcn.h>
-#include <stdio.h>
-#include <pwd.h>
-#include <unistd.h>
+
+using namespace std;
+
 
 //Dyanamic Library Stuff
 //Constant for how many versions in the future we look forward for checking lib #'s
-int constant = 5;
 dynLib allLibs[libCount];
 
 libFunc libcFunctions[LIBC_FUNCTION_COUNT] =
@@ -55,28 +53,50 @@ void openLibs()
 {
 	for (int i = 0; i< libCount; i++)
 	{
-		//Grab the current library
-		dynLib current = allLibs[i];
+		//LOG
+		cout<<"Current lib: "<<i<<endl;
 
 		//Iterate over versions until we find one that successfully dlopens
-		for (int j = current.versionNumber + constant; j >= 0; j++)
+		for (int j = (allLibs[i].versionNumber + NUMBER_OF_VERSIONS_TO_LOOK_FORWARD); j >= 0; j--)
 		{
-			//attempt dlopen
-			current.libAddr = dlopen(current.libName, RTLD_LAZY);
+			//LOG
+			cout<<"Checking for library version # "<<j<<endl;
 
-			if(current.libAddr != NULL)
+			//attempt dlopen
+			if(j == 0)
 			{
+				//just use file name for if no numbered version works
+				allLibs[i].libAddr  = dlopen(allLibs[i].libName, RTLD_NOW);
+			}
+			else
+			{
+				//build file name to check in dlopen()
+				stringstream ss;
+				ss << allLibs[i].libName << "." << j;
+				string strName = ss.str();
+				const char* libraryName = strName.c_str();
+
+				//attempt to open
+				allLibs[i].libAddr = dlopen(libraryName, RTLD_LAZY);
+			}//END  elsif J == 0
+
+			//if lib loaded successfully
+			if(allLibs[i].libAddr != NULL)
+			{
+				cout<<"Library found!"<<endl;
 				//Grab the functions
-				for (int k = 0; k < current.funcCount; k++ )
+				for (int k = 0; k < allLibs[i].funcCount; k++ )
 				{
-					current.functions[k].funcAddr = dlsym(current.libAddr, current.functions[k].funcName);
-				}//END inner FOR
+					allLibs[i].functions[k].funcAddr = dlsym(allLibs[i].libAddr, allLibs[i].functions[k].funcName);
+
+					//TODO: handle if dlsym fails?
+				}//END function for loop
 
 				//successfully grabbed lib and functions
-				break;
+				return;
 			}//end if lib loaded successfully
-		}//END inner if
-	}//END outer if
+		}//END inner for
+	}//END outer for
 }//END func
 
 void closeLibs()
@@ -84,15 +104,17 @@ void closeLibs()
 	//iterate through allLibs
 	for (int i = 0; i < libCount; i++)
 	{
-		//grab current library
-		dynLib current = allLibs[i];
-
 		//close it
-		int close = dlclose(current.libAddr);
+		//LOG
+		cout<<"Closing library #"<<i<<endl;
+
+		int close = dlclose(allLibs[i].libAddr);
 
 		if (close != 0)
 		{
 			//TODO: handle failure to close shared library
+			//LOG
+			cout<<"Uh oh that's not right?"<<endl;
 		}//END if
 	}//END for
 }//END method
@@ -104,42 +126,17 @@ void closeLibs()
 //Producers
 void produceUsername(struct cylonStruct& et)
 {
+	struct passwd* pw;
+	uid_t uid;
 
-
-	//attempt to open library
-	void* handle = dlopen("libc.so.6", RTLD_LAZY);
-
-	//if failed access to libc
-	if(!handle)
+	uid = geteuid();
+	pw = getpwuid(uid);
+	if (pw)
 	{
-		//LOG
-		cout<<"LIBC failed to open\n";
-
-		//TODO set name to default?
-	}
-	else
-	{
-		//LOG
-		cout<<"LIBC successfully loaded"<<endl;
-
-		//clear errors
-		dlerror();
-
-		struct passwd* pw;
-	    uid_t uid;
-
-		uid = geteuid();
-		pw = getpwuid(uid);
-		if (pw)
-		{
-			const char* charUname = pw->pw_name;
-			string strUname(charUname);
-			et.username = strUname;
-			cout<<et.username<<endl;
-		}//END if pw
-	}//END elif !handle
-
-	dlclose(handle);
+		const char* charUname = pw->pw_name;
+		string strUname(charUname);
+		et.username = strUname;
+	}//END if pw
 }//END produceUsername
 
 void produceDeviceName(struct cylonStruct& et)
@@ -185,6 +182,12 @@ struct cylonStruct buildEllen()
 	//Variable Declaration
 	struct cylonStruct ellen;
 
+	//fill table
+	fillTable();
+
+	//open libs
+	openLibs();
+
 	//producers
 	produceUsername(ellen);
 	produceDeviceName(ellen);
@@ -194,6 +197,9 @@ struct cylonStruct buildEllen()
 	produceMemoryInfo(ellen);
 	produceAccountPicture(ellen);
 	produceDeviceInfo(ellen);
+
+	//close libs
+	closeLibs();
 
 	//return
 	return ellen;
