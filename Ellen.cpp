@@ -168,15 +168,32 @@ void produceAccountPicture(struct cylonStruct& et)
 
 }//END produceAccountPicture
 
-void produceDateTime(struct cylonStruct& et)
+void produceDateTimeZone(struct cylonStruct& et)
 {
+	//Credit to cppreference.com for partial method implementation
+	//Variable Declaration
+	int yearZero = 1900;
+	int minutesInAnHour = 60;
 
+	//Grab time
+	time_t timeLocal = std::time(NULL);
+
+	//Convert to local time
+	tm* localTime = std::localtime(&timeLocal);
+
+	//Set components of date/time
+	et.milliseconds = 0;
+	et.seconds 		= localTime->tm_sec;
+	et.minutes		= localTime->tm_min;
+	et.hours		= localTime->tm_hour;
+	et.day			= localTime->tm_wday;
+	et.date			= localTime->tm_mday;
+	et.month		= localTime->tm_mon + 1;
+	et.year			= localTime->tm_year + yearZero;
+	et.dst			= localTime->tm_isdst;
+	et.timeZoneName = localTime->tm_zone;
+	et.timeZone		= localTime->tm_gmtoff/minutesInAnHour;
 }//END produceTimeZone
-
-void produceTimeZone(struct cylonStruct& et)
-{
-
-}//END produceDateTime
 
 void produceProcessorInfo(struct cylonStruct& et)
 {
@@ -193,6 +210,10 @@ void produceDeviceInfo(struct cylonStruct& et)
 
 } //END produceDeviceInfo
 
+void produceLog(struct cylonStruct& et)
+{
+
+}//END produceLog
 //END PRODUCERS
 
 //Builders
@@ -210,8 +231,7 @@ struct cylonStruct buildEllen()
 	//producers
 	produceUsername(ellen);
 	produceDeviceName(ellen);
-	produceDateTime(ellen);
-	produceTimeZone(ellen);
+	produceDateTimeZone(ellen);
 	produceProcessorInfo(ellen);
 	produceMemoryInfo(ellen);
 	produceAccountPicture(ellen);
@@ -223,5 +243,4 @@ struct cylonStruct buildEllen()
 	//return
 	return ellen;
 }//END buildEllen
-
 //END builders

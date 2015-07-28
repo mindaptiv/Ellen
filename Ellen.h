@@ -16,12 +16,14 @@
 
 
 //included in Linux Standard Base
-#include <stdio.h> //libc
-#include <pwd.h>   //libc
+#include <stdio.h>  //libc
+#include <pwd.h>    //libc
 #include <unistd.h> //libc
-#include <cstring>
+#include <cstring>  //libc
+#include <ctime>    //libc
 
 #include <iostream> //libstdc++
+#include <iomanip>
 
 //other
 #include <dlfcn.h>
@@ -76,11 +78,12 @@ void closeLibs();
 void produceUsername(struct cylonStruct& et);
 void produceDeviceName(struct cylonStruct& et);
 void produceAccountPicture(struct cylonStruct& et);
-void produceDateTime(struct cylonStruct& et);
+void produceDateTimeZone(struct cylonStruct& et);
 void produceTimeZone(struct cylonStruct& et);
 void produceProcessorInfo(struct cylonStruct& et);
 void produceMemoryInfo(struct cylonStruct& et);
 void produceDeviceInfo(struct cylonStruct& et);
+void produceLog(struct cylonStruct& et);
 
 //Builders
 struct cylonStruct buildEllen();
