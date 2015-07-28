@@ -197,7 +197,33 @@ void produceDateTimeZone(struct cylonStruct& et)
 
 void produceProcessorInfo(struct cylonStruct& et)
 {
+	//Credit to David R. Nadeau @ nadeausoftware.com for partial method code
+	//Variable Declaration
+	struct sysinfo info;
+	int byteConverter = 1024;
+	float lowMemory = 0.99;
 
+	//Grab info
+	sysinfo(&info);
+
+	//Set cylonStruct memory fields
+	et.memoryBytes 				= info.totalram;
+	et.bytesAvails 				= info.freeram;
+	et.threshold   				= info.totalram * lowMemory;
+	et.pageSize 				= sysconf (_SC_PAGESIZE);
+	et.allocationGranularity 	= et.pageSize;
+	et.minAppAddress 			= ERROR_INT;
+	et.maxAppAddress			= ERROR_INT;
+
+	//Calculate low memory
+	if(info.freeram/info.totalram >= lowMemory)
+	{
+		et.lowMemory = 1;
+	}
+	else
+	{
+		et.lowMemory = 0;
+	}
 } //END produceProcessorInfo
 
 void produceMemoryInfo(struct cylonStruct& et)

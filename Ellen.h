@@ -16,14 +16,14 @@
 
 
 //included in Linux Standard Base
-#include <stdio.h>  //libc
-#include <pwd.h>    //libc
-#include <unistd.h> //libc
-#include <cstring>  //libc
-#include <ctime>    //libc
+#include <stdio.h>  		//libc
+#include <pwd.h>    		//libc
+#include <unistd.h> 		//libc
+#include <cstring>  		//libc
+#include <ctime>    		//libc
+#include <sys/sysinfo.h>	//libc
 
-#include <iostream> //libstdc++
-#include <iomanip>
+#include <iostream> 		//libstdc++
 
 //other
 #include <dlfcn.h>
