@@ -90,6 +90,11 @@ void openLibs()
 					allLibs[i].functions[k].funcAddr = dlsym(allLibs[i].libAddr, allLibs[i].functions[k].funcName);
 
 					//TODO: handle if dlsym fails?
+					if(allLibs[i].functions[k].funcAddr == NULL)
+					{
+						//LOG
+						cout<<"Method "<<k<<", "<<allLibs[i].functions[k].funcName<<" not found!"<<endl;
+					}
 				}//END function for loop
 
 				//successfully grabbed lib and functions
@@ -118,10 +123,7 @@ void closeLibs()
 		}//END if
 	}//END for
 }//END method
-
-
 //END DYLIB stuff
-
 
 //Producers
 void produceUsername(struct cylonStruct& et)
@@ -141,7 +143,24 @@ void produceUsername(struct cylonStruct& et)
 
 void produceDeviceName(struct cylonStruct& et)
 {
+	//Method Credit to Saurabh Gupta @ ccplusplus.com
+	//Variable Declaration
+	int result;
+	char buf[32];
 
+	//grab host name
+	result = gethostname(buf, sizeof buf);
+
+	//if error, set to default value
+	if (result != 0)
+	{
+		et.deviceName = "0";
+		return;
+	}
+
+	//otherwise, set deviceName field
+	string strDeviceName(buf);
+	et.deviceName = strDeviceName;
 }//END produceDeviceName
 
 void produceAccountPicture(struct cylonStruct& et)

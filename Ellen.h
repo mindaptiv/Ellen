@@ -19,6 +19,7 @@
 #include <stdio.h> //libc
 #include <pwd.h>   //libc
 #include <unistd.h> //libc
+#include <cstring>
 
 #include <iostream> //libstdc++
 
@@ -27,6 +28,10 @@
 #include <sstream>
 
 //Constants
+//Error values for missing/invalid/forbidden data fields
+static const std::string ERROR_STRING 	= "0";
+static const int ERROR_INT 				= 0;
+
 //Number of versions beyond "Latest Version" of a library to check for, in case if a library updates after release
 static const int NUMBER_OF_VERSIONS_TO_LOOK_FORWARD = 5;
 
