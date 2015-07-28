@@ -197,10 +197,15 @@ void produceDateTimeZone(struct cylonStruct& et)
 
 void produceProcessorInfo(struct cylonStruct& et)
 {
+	//Grab processor count
+	et.processorCount = sysconf(_SC_NPROCESSORS_ONLN);
+} //END produceProcessorInfo
+
+void produceMemoryInfo(struct cylonStruct& et)
+{
 	//Credit to David R. Nadeau @ nadeausoftware.com for partial method code
 	//Variable Declaration
 	struct sysinfo info;
-	int byteConverter = 1024;
 	float lowMemory = 0.99;
 
 	//Grab info
@@ -224,11 +229,6 @@ void produceProcessorInfo(struct cylonStruct& et)
 	{
 		et.lowMemory = 0;
 	}
-} //END produceProcessorInfo
-
-void produceMemoryInfo(struct cylonStruct& et)
-{
-
 } //END produceMemoryInfo
 
 void produceDeviceInfo(struct cylonStruct& et)
