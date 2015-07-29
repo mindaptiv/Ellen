@@ -328,6 +328,17 @@ void produceMemoryInfo(struct cylonStruct& et)
 	{
 		et.lowMemory = 0;
 	}
+
+	//set osArch
+	if (__WORDSIZE % 2)
+	{
+		//set default
+		et.osArchitecture = ERROR_INT;
+	}
+	else
+	{
+		et.osArchitecture = __WORDSIZE;
+	}
 } //END produceMemoryInfo
 
 void produceDeviceInfo(struct cylonStruct& et)

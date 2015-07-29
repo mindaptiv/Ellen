@@ -28,6 +28,7 @@
 
 #include <iostream> 		//libstdc++
 #include <fstream>			//libstdc++
+#include <limits.h>			//libstdc++
 
 //other
 #include <dlfcn.h>
