@@ -342,7 +342,19 @@ void produceLog(struct cylonStruct& et)
 	cout<<"Device Name: "<<et.deviceName<<endl;
 	cout<<"Timestamp: "<<et.day<<", "<<et.month<<"/"<<et.day<<"/"<<et.year<<" "<<et.hours<<":"<<et.minutes<<":"<<et.seconds<<":"<<et.milliseconds<<" "<<et.timeZoneName<<" "<<et.timeZone<<" DST: "<<et.dst<<endl;
 	cout<<"Profile Picture Location: "<<et.picturePath<<" Type: "<<et.pictureType<<endl;
-	cout<<endl;
+	cout<<"Processor Architecture: "<<et.architecture<<endl;
+	cout<<"Processor Level: "<<et.processorLevel<<endl;
+	cout<<"Processor Count: "<<et.processorCount<<endl;
+	cout<<"Processor Clock Speed: "<<et.hertz<<"Hz"<<endl;
+	cout<<"OS Architecture: "<<et.osArchitecture<<endl;
+	cout<<"Installed Memory: "<<et.memoryBytes<<endl;
+	cout<<"Available Memory: "<<et.bytesAvails<<endl;
+	cout<<"Low Memory Threshold: "<<et.threshold<<endl;
+	cout<<"Low Memory? "<<et.lowMemory<<endl;
+	cout<<"Page Size: "<<et.pageSize<<endl;
+	cout<<"Allocation Granularity: "<<et.allocationGranularity<<endl;
+	cout<<"Min/Max App Address: "<<et.minAppAddress<<"/"<<et.maxAppAddress<<endl;
+	cout<<"Error: "<<et.error<<endl;
 }//END produceLog
 //END PRODUCERS
 
