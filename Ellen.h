@@ -83,9 +83,8 @@ void openLibs();
 void closeLibs();
 
 //Producers
-void produceUsername(struct cylonStruct& et);
+void produceUserProfile(struct cylonStruct& et);
 void produceDeviceName(struct cylonStruct& et);
-void produceAccountPicture(struct cylonStruct& et);
 void produceDateTimeZone(struct cylonStruct& et);
 void produceTimeZone(struct cylonStruct& et);
 void produceProcessorInfo(struct cylonStruct& et);

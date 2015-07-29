@@ -126,7 +126,7 @@ void closeLibs()
 //END DYLIB stuff
 
 //Producers
-void produceUsername(struct cylonStruct& et)
+void produceUserProfile(struct cylonStruct& et)
 {
 	//set default
 	et.pictureLocation = ERROR_INT;
@@ -194,11 +194,6 @@ void produceDeviceName(struct cylonStruct& et)
 	string strDeviceName(buf);
 	et.deviceName = strDeviceName;
 }//END produceDeviceName
-
-void produceAccountPicture(struct cylonStruct& et)
-{
-
-}//END produceAccountPicture
 
 void produceDateTimeZone(struct cylonStruct& et)
 {
@@ -364,12 +359,11 @@ struct cylonStruct buildEllen()
 	openLibs();
 
 	//producers
-	produceUsername(ellen);
+	produceUserProfile(ellen);
 	produceDeviceName(ellen);
 	produceDateTimeZone(ellen);
 	produceProcessorInfo(ellen);
 	produceMemoryInfo(ellen);
-	produceAccountPicture(ellen);
 	produceDeviceInfo(ellen);
 	produceLog(ellen);
 
