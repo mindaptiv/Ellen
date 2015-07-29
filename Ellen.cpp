@@ -128,6 +128,9 @@ void closeLibs()
 //Producers
 void produceUsername(struct cylonStruct& et)
 {
+	//set default
+	et.pictureLocation = ERROR_INT;
+
 	struct passwd* pw;
 	uid_t uid;
 
@@ -138,7 +141,36 @@ void produceUsername(struct cylonStruct& et)
 		const char* charUname = pw->pw_name;
 		string strUname(charUname);
 		et.username = strUname;
+
+		//Build file name
+		string avatarName = AVATAR_PATH + et.username;
+
+		//Check if file exists
+		ifstream f(avatarName.c_str());
+		if (f.good())
+		{
+			//set picture Path and Type
+			et.picturePath = avatarName;
+			et.pictureType = AVATAR_TYPE;
+		}
+		else
+		{
+			//set defaults
+			et.picturePath = ERROR_STRING;
+			et.pictureType = ERROR_STRING;
+		}
+
+		//close file
+		f.close();
+
 	}//END if pw
+	else
+	{
+		//set defaults
+		et.username   	= ERROR_STRING;
+		et.picturePath 	= ERROR_STRING;
+		et.pictureType  = ERROR_STRING;
+	}
 }//END produceUsername
 
 void produceDeviceName(struct cylonStruct& et)
@@ -310,7 +342,12 @@ void produceDeviceInfo(struct cylonStruct& et)
 
 void produceLog(struct cylonStruct& et)
 {
-
+	cout<<"Cylon @: "<<&et<<endl;
+	cout<<"Username: "<<et.username<<endl;
+	cout<<"Device Name: "<<et.deviceName<<endl;
+	cout<<"Timestamp: "<<et.day<<", "<<et.month<<"/"<<et.day<<"/"<<et.year<<" "<<et.hours<<":"<<et.minutes<<":"<<et.seconds<<":"<<et.milliseconds<<" "<<et.timeZoneName<<" "<<et.timeZone<<" DST: "<<et.dst<<endl;
+	cout<<"Profile Picture Location: "<<et.picturePath<<" Type: "<<et.pictureType<<endl;
+	cout<<endl;
 }//END produceLog
 //END PRODUCERS
 
@@ -334,6 +371,7 @@ struct cylonStruct buildEllen()
 	produceMemoryInfo(ellen);
 	produceAccountPicture(ellen);
 	produceDeviceInfo(ellen);
+	produceLog(ellen);
 
 	//close libs
 	closeLibs();

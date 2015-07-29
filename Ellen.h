@@ -23,15 +23,21 @@
 #include <ctime>    		//libc
 #include <sys/sysinfo.h>	//libc
 #include <sys/utsname.h>    //libc
+#include <sys/stat.h>		//libc
 #include <stdlib.h>         //libc
 
 #include <iostream> 		//libstdc++
+#include <fstream>			//libstdc++
 
 //other
 #include <dlfcn.h>
 #include <sstream>
 
 //Constants
+//path to profile image
+static const std::string AVATAR_PATH = "/var/lib/AccountsService/icons/";
+static const std::string AVATAR_TYPE = ".png";
+
 //Error values for missing/invalid/forbidden data fields
 static const std::string ERROR_STRING 	= "0";
 static const int ERROR_INT 				= 0;
