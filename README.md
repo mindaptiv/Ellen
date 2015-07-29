@@ -1,2 +1,2 @@
 # Ellen
-Grabs system and user information in an Ubuntu context
+Grabs system and user information in a Linux context
