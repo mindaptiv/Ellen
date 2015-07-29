@@ -22,6 +22,7 @@
 #include <cstring>  		//libc
 #include <ctime>    		//libc
 #include <sys/sysinfo.h>	//libc
+#include <sys/utsname.h>    //libc
 #include <stdlib.h>         //libc
 
 #include <iostream> 		//libstdc++

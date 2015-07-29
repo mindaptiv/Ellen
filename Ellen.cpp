@@ -199,6 +199,78 @@ void produceProcessorInfo(struct cylonStruct& et)
 {
 	//Grab processor count
 	et.processorCount = sysconf(_SC_NPROCESSORS_ONLN);
+
+	//Credit to MakeLinux.net for partial method code
+	//Variable Declaration
+	FILE* fp;
+	char buffer[1024];
+	size_t bytes_read;
+	char* match;
+	float clock_speed;
+	float mhzToHz = 1000000;
+	int   processorLevel;
+
+	//Read contents of /proc/cpuinfo into the buffer
+	fp = fopen("/proc/cpuinfo", "r");
+	bytes_read = fread (buffer, 1, sizeof(buffer), fp);
+	fclose(fp);
+
+	//if read failed or exceeds buffer, get out
+	if (bytes_read == 0 || bytes_read > sizeof(buffer))
+	{
+		//Set defaults
+		et.hertz 			= ERROR_INT;
+		et.processorLevel 	= ERROR_INT;
+		et.architecture 	= ERROR_STRING;
+	}
+	else
+	{
+		//Add null termination to buffer
+		buffer[bytes_read] = '\0';
+
+		//Grab CPU speed
+		match = strstr(buffer, "cpu MHz");
+		if (match == NULL)
+		{
+			//Set Default
+			et.hertz = ERROR_INT;
+		}
+		else
+		{
+			sscanf(match, "cpu MHz : %f", &clock_speed);
+			et.hertz = clock_speed * mhzToHz;
+		}//END if match is null
+
+		//Grab architecture
+		match = strstr(buffer, "model");
+
+		if (match == NULL)
+		{
+			//Set default
+			et.processorLevel = ERROR_INT;
+		}
+		else
+		{
+			sscanf(match, "model : %d", &processorLevel);
+			et.processorLevel = (uint16_t)processorLevel;
+		}//END if match is null
+	}//END if
+
+	//Credit to Amber @ stack overflow for partial method code
+	//Grab utsname struct that contains architecture info
+	struct utsname unameData;
+	int result = uname(&unameData);
+
+	//Check for errors
+	if (result != 0)
+	{
+		//set default
+		et.architecture = ERROR_STRING;
+	} //end if result != 0
+	else
+	{
+		et.architecture = unameData.machine;
+	}
 } //END produceProcessorInfo
 
 void produceMemoryInfo(struct cylonStruct& et)
