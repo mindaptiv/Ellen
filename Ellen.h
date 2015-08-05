@@ -97,5 +97,8 @@ void produceLog(struct cylonStruct& et);
 struct cylonStruct buildEllen();
 struct deviceStruct buildDevice();
 
+//TODO: remove this
+//Test
+void testLibUSB();
 
 #endif /* ELLEN_H_ */
