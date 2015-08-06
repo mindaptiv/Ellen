@@ -25,14 +25,14 @@
 #include <sys/utsname.h>    //libc
 #include <sys/stat.h>		//libc
 #include <stdlib.h>         //libc
-
+#include <sstream>			//libstdc++
 #include <iostream> 		//libstdc++
 #include <fstream>			//libstdc++
 #include <limits.h>			//libstdc++
 
 //other
 #include <dlfcn.h>
-#include <sstream>
+#include <libusb-1.0/libusb.h>
 
 //Constants
 //path to profile image
@@ -89,13 +89,16 @@ void produceDeviceName(struct cylonStruct& et);
 void produceDateTimeZone(struct cylonStruct& et);
 void produceTimeZone(struct cylonStruct& et);
 void produceProcessorInfo(struct cylonStruct& et);
-void produceMemoryInfo(struct cylonStruct& et);
+void produceMemoryInfo(struct cylonStruct & et);
 void produceDeviceInfo(struct cylonStruct& et);
+void produceUsbDeviceInfo(struct cylonStruct& et);
 void produceLog(struct cylonStruct& et);
 
 //Builders
 struct cylonStruct buildEllen();
-struct deviceStruct buildDevice();
+struct deviceStruct buildBlankDevice();
+struct deviceStruct buildUsbDevice(struct libusb_device*);
+struct deviceStruct buildUsbDevice(struct libusb_device*, struct libusb_device_descriptor descriptor);
 
 //TODO: remove this
 //Test

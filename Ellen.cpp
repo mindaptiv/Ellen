@@ -4,13 +4,10 @@
 //josh@mindaptiv.com
 
 //includes
-//TODO: remove this and replace with dylib stuff
-//test
-#include <libusb-1.0/libusb.h>
-
 //custom
 #include "Ellen.h"
 
+//namespace
 using namespace std;
 
 //TODO: remove this
@@ -41,8 +38,7 @@ void print_devs(libusb_device **devs)
 		}
 		printf("\n");
 	}
-}
-
+}//END print devices
 
 void testLibUSB()
 {
@@ -82,14 +78,8 @@ void testLibUSB()
 
 	//exit
 	libusb_exit(context);
-
-}
-
-
-
+}//END test usb lib
 //END test
-
-
 
 //Dyanamic Library Stuff
 //Constant for how many versions in the future we look forward for checking lib #'s
@@ -424,8 +414,128 @@ void produceMemoryInfo(struct cylonStruct& et)
 
 void produceDeviceInfo(struct cylonStruct& et)
 {
+	//Grab USB Devices
+	produceUsbDeviceInfo(et);
 
+	//Grab total count
+	et.detectedDeviceCount = et.detectedDevices.size();
 } //END produceDeviceInfo
+
+void produceUsbDeviceInfo(struct cylonStruct& et)
+{
+	//Credit to LibUSB examples for partial method code
+	//Variable Declaration:
+
+	//device array
+	libusb_device** devices;
+	libusb_context* context;
+	ssize_t count;
+	int result;
+	std::list<struct deviceStruct> detectedDevices;
+
+	//init lib & session
+	result = libusb_init(&context);
+
+	//check for errors
+	if(result < 0)
+	{
+		return;
+	}
+
+	//grab devices
+	count = libusb_get_device_list(context, &devices);
+
+	//check for errors
+	if(result < 0)
+	{
+		return;
+	}
+
+	//TODO: Remove this
+	//LOG
+	cout<<"USB Devices Detected: "<<count<<endl;
+
+
+	libusb_device *device;
+	int i = 0, j = 0;
+	uint8_t path[8];
+
+	//iterate over the devices retrieved
+	while ( (device = devices[i++]) != NULL )
+	{
+		//Variable Declaration
+		struct  libusb_device_descriptor descriptor;
+		struct	deviceStruct devStrc;
+		int 	result;
+
+			//Grab description for device
+			result = libusb_get_device_descriptor(device, &descriptor);
+
+			//Check for errors
+			if (result < 0)
+			{
+				//build device
+				devStrc = buildUsbDevice(device);
+
+				//Do nothing else for this device
+				continue;
+			}//END if error
+
+			//set fields of deviceStruct via descriptor
+			devStrc = buildUsbDevice(device, descriptor);
+
+			//place deviceStruct in the back of the devices list
+			detectedDevices.insert(detectedDevices.end(), devStrc);
+		}//END while
+
+		//free the list
+		libusb_free_device_list(devices, 1);
+
+		//exit
+		libusb_exit(context);
+
+		//TODO: handle special device types (controllers, etc.)
+		//Alright, now grab the lsusb output (if available)
+
+		//Variable Declaration
+		FILE* fp;
+		char buffer[4096];
+		const char* consoleCommand = "lsusb";
+
+		//open the pipe
+		FILE* pipe = popen(consoleCommand, "r");
+
+		//Check for errors
+		if(!pipe)
+		{
+			//pipe command failed, we're done here
+			return;
+		}
+
+		std::string strResult = "";
+
+		while(!feof(pipe))
+		{
+			if (fgets(buffer, 128, pipe) != NULL)
+			{
+				strResult += buffer;
+			}
+		}
+
+		//close pipe
+		pclose(pipe);
+
+		//parse result for every device we found so far
+		//TODO: parse stuff
+
+
+		//Add devices into cylon device list
+		while(!detectedDevices.empty())
+		{
+			et.detectedDevices.insert(et.detectedDevices.end(), detectedDevices.front());
+			detectedDevices.pop_front();
+		}//END WHILE
+}//END produce USB device info
 
 void produceLog(struct cylonStruct& et)
 {
@@ -446,6 +556,7 @@ void produceLog(struct cylonStruct& et)
 	cout<<"Page Size: "<<et.pageSize<<endl;
 	cout<<"Allocation Granularity: "<<et.allocationGranularity<<endl;
 	cout<<"Min/Max App Address: "<<et.minAppAddress<<"/"<<et.maxAppAddress<<endl;
+	cout<<"Detected Device Count: "<<et.detectedDeviceCount<<endl;
 	cout<<"Error: "<<et.error<<endl;
 }//END produceLog
 //END PRODUCERS
@@ -453,10 +564,6 @@ void produceLog(struct cylonStruct& et)
 //Builders
 struct cylonStruct buildEllen()
 {
-	//TODO: remove this
-	//test
-	testLibUSB();
-
 	//Variable Declaration
 	struct cylonStruct ellen;
 
@@ -481,4 +588,86 @@ struct cylonStruct buildEllen()
 	//return
 	return ellen;
 }//END buildEllen
+
+//Blank builder
+struct deviceStruct buildBlankDevice()
+{
+	//Variable Declaration
+	struct deviceStruct device;
+
+	//set default values for fields that are unused in this context
+	device.panelLocation 	= ERROR_INT;
+	device.inLid			= ERROR_INT;
+	device.inDock			= ERROR_INT;
+	device.isDefault		= ERROR_INT;
+	device.isEnabled		= 1;
+	device.orientation		= NO_ROTATION;
+	device.displayIndex		= ERROR_INT;
+	device.controllerIndex  = ERROR_INT;
+	device.storageIndex		= ERROR_INT;
+	device.sensorsIndex		= ERROR_INT;
+	device.vendorID			= ERROR_INT;
+	device.name				= ERROR_STRING;
+	device.id				= ERROR_STRING;
+	device.deviceType		= ERROR_INT;
+
+	//Return
+	return device;
+}//END build blank device
+
+struct deviceStruct buildUsbDevice(struct libusb_device* usbDev)
+{
+	//Variable Declaration
+	struct deviceStruct device;
+
+	//set default values for fields that are unused in this context
+	device.panelLocation 	= ERROR_INT;
+	device.inLid			= ERROR_INT;
+	device.inDock			= ERROR_INT;
+	device.isDefault		= ERROR_INT;
+	device.isEnabled		= 1;
+	device.orientation		= NO_ROTATION;
+	device.displayIndex		= ERROR_INT;
+	device.controllerIndex  = ERROR_INT;
+	device.storageIndex		= ERROR_INT;
+	device.sensorsIndex		= ERROR_INT;
+
+	//TODO: fill these in
+	//grab fields from arguments
+	device.vendorID			= ERROR_INT;
+	device.name				= ERROR_STRING;
+	device.id				= ERROR_STRING;
+	device.deviceType		= ERROR_INT;
+
+	//Return
+	return device;
+}//END build device via libusb_device
+
+struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_device_descriptor descriptor)
+{
+	//Variable Declaration
+	struct deviceStruct device;
+
+	//set default values for fields that are unused in this context
+	device.panelLocation 	= ERROR_INT;
+	device.inLid			= ERROR_INT;
+	device.inDock			= ERROR_INT;
+	device.isDefault		= ERROR_INT;
+	device.isEnabled		= 1;
+	device.orientation		= NO_ROTATION;
+	device.displayIndex		= ERROR_INT;
+	device.controllerIndex  = ERROR_INT;
+	device.storageIndex		= ERROR_INT;
+	device.sensorsIndex		= ERROR_INT;
+
+	//TODO: fill these in
+	//grab fields from arguments
+	device.vendorID			= ERROR_INT;
+	device.name				= ERROR_STRING;
+	device.id				= ERROR_STRING;
+	device.deviceType		= ERROR_INT;
+
+	//Return
+	return device;
+}//END build device via libusb device/descriptor combo
 //END builders
