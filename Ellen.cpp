@@ -10,77 +10,6 @@
 //namespace
 using namespace std;
 
-//TODO: remove this
-//Test
-void print_devs(libusb_device **devs)
-{
-	libusb_device *dev;
-	int i = 0, j = 0;
-	uint8_t path[8];
-
-	while ((dev = devs[i++]) != NULL) {
-		struct libusb_device_descriptor desc;
-		int r = libusb_get_device_descriptor(dev, &desc);
-		if (r < 0) {
-			fprintf(stderr, "failed to get device descriptor");
-			return;
-		}
-
-		printf("%04x:%04x (bus %d, device %d)",
-			desc.idVendor, desc.idProduct,
-			libusb_get_bus_number(dev), libusb_get_device_address(dev));
-
-		r = libusb_get_port_numbers(dev, path, sizeof(path));
-		if (r > 0) {
-			printf(" path: %d", path[0]);
-			for (j = 1; j < r; j++)
-				printf(".%d", path[j]);
-		}
-		printf("\n");
-	}
-}//END print devices
-
-void testLibUSB()
-{
-	//Variable Declaration:
-
-	//device array
-	libusb_device** devices;
-	libusb_context* context;
-	ssize_t count;
-	int result;
-
-	//init lib & session
-	result = libusb_init(&context);
-
-	//check for errors
-	if(result < 0)
-	{
-		return;
-	}
-
-	//grab devices
-	count = libusb_get_device_list(context, &devices);
-
-	//check for errors
-	if(result < 0)
-	{
-		return;
-	}
-
-	cout<<count<<endl;
-
-	//print device info
-	print_devs(devices);
-
-	//free the list
-	libusb_free_device_list(devices, 1);
-
-	//exit
-	libusb_exit(context);
-}//END test usb lib
-//END test
-
 //Dyanamic Library Stuff
 //Constant for how many versions in the future we look forward for checking lib #'s
 dynLib allLibs[libCount];
@@ -160,11 +89,11 @@ void openLibs()
 				{
 					allLibs[i].functions[k].funcAddr = dlsym(allLibs[i].libAddr, allLibs[i].functions[k].funcName);
 
-					//TODO: handle if dlsym fails?
 					if(allLibs[i].functions[k].funcAddr == NULL)
 					{
 						//LOG
 						cout<<"Method "<<k<<", "<<allLibs[i].functions[k].funcName<<" not found!"<<endl;
+						continue;
 					}
 				}//END function for loop
 
@@ -188,9 +117,8 @@ void closeLibs()
 
 		if (close != 0)
 		{
-			//TODO: handle failure to close shared library
-			//LOG
-			cout<<"Uh oh that's not right?"<<endl;
+			cout<<"Error closing library."<<endl;
+			continue;
 		}//END if
 	}//END for
 }//END method
@@ -429,7 +357,6 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 	//device array
 	libusb_device** devices;
 	libusb_context* context;
-	ssize_t count;
 	int result;
 	std::list<struct deviceStruct> detectedDevices;
 
@@ -443,7 +370,7 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 	}
 
 	//grab devices
-	count = libusb_get_device_list(context, &devices);
+	ssize_t count = libusb_get_device_list(context, &devices);
 
 	//check for errors
 	if(result < 0)
@@ -451,14 +378,9 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 		return;
 	}
 
-	//TODO: Remove this
-	//LOG
-	cout<<"USB Devices Detected: "<<count<<endl;
-
-
+	//Variable Declaration
 	libusb_device *device;
-	int i = 0, j = 0;
-	uint8_t path[8];
+	int i = 0;
 
 	//iterate over the devices retrieved
 	while ( (device = devices[i++]) != NULL )
@@ -475,7 +397,7 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 			if (result < 0)
 			{
 				//build device
-				devStrc = buildUsbDevice(device);
+				devStrc = buildBlankDevice();
 
 				//Do nothing else for this device
 				continue;
@@ -491,15 +413,14 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 		//free the list
 		libusb_free_device_list(devices, 1);
 
-		//exit
+		//exit from lib
 		libusb_exit(context);
 
 		//TODO: handle special device types (controllers, etc.)
-		//Alright, now grab the lsusb output (if available)
+		//grab the lsusb output (if available)
 
 		//Variable Declaration
-		FILE* fp;
-		char buffer[4096];
+		char buffer[8192];
 		const char* consoleCommand = "lsusb";
 
 		//open the pipe
@@ -512,27 +433,41 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 			return;
 		}
 
-		std::string strResult = "";
-
-		while(!feof(pipe))
-		{
-			if (fgets(buffer, 128, pipe) != NULL)
-			{
-				strResult += buffer;
-			}
-		}
+		//read into the buffer
+		size_t bytes_read = fread (buffer, 1, sizeof(buffer), pipe);
 
 		//close pipe
 		pclose(pipe);
 
 		//parse result for every device we found so far
-		//TODO: parse stuff
-
-
-		//Add devices into cylon device list
 		while(!detectedDevices.empty())
 		{
-			et.detectedDevices.insert(et.detectedDevices.end(), detectedDevices.front());
+			//Build string and convert it for strstr checking
+			//Credit to Benoit @ stackoverflow for partial method code
+			ostringstream oss;
+			oss << hex<< setfill('0')<<setw(4)<<detectedDevices.front().vendorID;
+			std::string spotStr = oss.str();
+			oss << dec;
+			spotStr = spotStr + ":" + detectedDevices.front().id;
+
+			const char* spot = spotStr.c_str();
+			char* match = strstr(buffer, spot);
+
+			//Check if match exists
+			if (match != NULL)
+			{
+				//For storing the name ripped out of the buffer
+				char englishName[bytes_read];
+				int dontcare;
+				int dontcare2;
+
+				//Search buffer and rip name
+				sscanf(match, "%x:%x %[^\t\n]", &dontcare, &dontcare2, englishName);
+				detectedDevices.front().name = englishName;
+			}//END if match is null
+
+			//empty list and move contents to cylon's list
+			et.detectedDevices.push_back(detectedDevices.front());
 			detectedDevices.pop_front();
 		}//END WHILE
 }//END produce USB device info
@@ -558,6 +493,13 @@ void produceLog(struct cylonStruct& et)
 	cout<<"Min/Max App Address: "<<et.minAppAddress<<"/"<<et.maxAppAddress<<endl;
 	cout<<"Detected Device Count: "<<et.detectedDeviceCount<<endl;
 	cout<<"Error: "<<et.error<<endl;
+	cout<<"Devices: "<<endl;
+
+	//credit to kmpofighter @ cplusplus.com for partial method code
+	for(list<deviceStruct>::const_iterator iterator = et.detectedDevices.begin(), end = et.detectedDevices.end(); iterator != end; ++iterator)
+	{
+		cout<<"\t"<<"Name: "<<iterator->name<<endl;
+	}
 }//END produceLog
 //END PRODUCERS
 
@@ -615,34 +557,6 @@ struct deviceStruct buildBlankDevice()
 	return device;
 }//END build blank device
 
-struct deviceStruct buildUsbDevice(struct libusb_device* usbDev)
-{
-	//Variable Declaration
-	struct deviceStruct device;
-
-	//set default values for fields that are unused in this context
-	device.panelLocation 	= ERROR_INT;
-	device.inLid			= ERROR_INT;
-	device.inDock			= ERROR_INT;
-	device.isDefault		= ERROR_INT;
-	device.isEnabled		= 1;
-	device.orientation		= NO_ROTATION;
-	device.displayIndex		= ERROR_INT;
-	device.controllerIndex  = ERROR_INT;
-	device.storageIndex		= ERROR_INT;
-	device.sensorsIndex		= ERROR_INT;
-
-	//TODO: fill these in
-	//grab fields from arguments
-	device.vendorID			= ERROR_INT;
-	device.name				= ERROR_STRING;
-	device.id				= ERROR_STRING;
-	device.deviceType		= ERROR_INT;
-
-	//Return
-	return device;
-}//END build device via libusb_device
-
 struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_device_descriptor descriptor)
 {
 	//Variable Declaration
@@ -653,18 +567,25 @@ struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_d
 	device.inLid			= ERROR_INT;
 	device.inDock			= ERROR_INT;
 	device.isDefault		= ERROR_INT;
-	device.isEnabled		= 1;
 	device.orientation		= NO_ROTATION;
 	device.displayIndex		= ERROR_INT;
 	device.controllerIndex  = ERROR_INT;
 	device.storageIndex		= ERROR_INT;
 	device.sensorsIndex		= ERROR_INT;
-
-	//TODO: fill these in
-	//grab fields from arguments
-	device.vendorID			= ERROR_INT;
 	device.name				= ERROR_STRING;
-	device.id				= ERROR_STRING;
+	device.isEnabled		= 1;
+
+	//grab fields from arguments
+	device.vendorID			= descriptor.idVendor;
+
+	//Convert id to string and save it
+	//Credit to Benoit @ stackoverflow for partial method code
+	ostringstream s;
+	s << hex<< setfill('0')<<setw(4)<< descriptor.idProduct;
+	device.id = s.str();
+	s << dec;
+
+	//TODO: grab bDeviceClass + bDeviceSubClass and interpret
 	device.deviceType		= ERROR_INT;
 
 	//Return

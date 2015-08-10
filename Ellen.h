@@ -27,6 +27,7 @@
 #include <stdlib.h>         //libc
 #include <sstream>			//libstdc++
 #include <iostream> 		//libstdc++
+#include <iomanip>
 #include <fstream>			//libstdc++
 #include <limits.h>			//libstdc++
 
@@ -99,9 +100,5 @@ struct cylonStruct buildEllen();
 struct deviceStruct buildBlankDevice();
 struct deviceStruct buildUsbDevice(struct libusb_device*);
 struct deviceStruct buildUsbDevice(struct libusb_device*, struct libusb_device_descriptor descriptor);
-
-//TODO: remove this
-//Test
-void testLibUSB();
 
 #endif /* ELLEN_H_ */
