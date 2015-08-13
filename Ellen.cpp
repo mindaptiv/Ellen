@@ -370,7 +370,7 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 	}
 
 	//grab devices
-	ssize_t count = libusb_get_device_list(context, &devices);
+	libusb_get_device_list(context, &devices);
 
 	//check for errors
 	if(result < 0)
@@ -386,9 +386,13 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 	while ( (device = devices[i++]) != NULL )
 	{
 		//Variable Declaration
-		struct  libusb_device_descriptor descriptor;
-		struct	deviceStruct devStrc;
+		struct libusb_device_descriptor descriptor;
+		struct libusb_config_descriptor* config;
+		struct libusb_device_handle* handle;
+		const struct libusb_interface* interface;
+		struct deviceStruct devStrc;
 		int 	result;
+		int 	interfaceCount;
 
 			//Grab description for device
 			result = libusb_get_device_descriptor(device, &descriptor);
@@ -402,6 +406,40 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 				//Do nothing else for this device
 				continue;
 			}//END if error
+
+
+			//grab the handle
+			result = libusb_open(device, &handle);
+
+			//check for errors
+			if (result < 0)
+			{
+				//build device
+				devStrc = buildUsbDevice(device, descriptor);
+
+				//do nothing else for this device
+				continue;
+			}
+
+			//get interface 0
+			//result = libusb_claim_interface(handle, 0);
+
+			//get config descriptor
+			result = libusb_get_active_config_descriptor(device, &config);
+
+			//check for errors
+			if (result < 0)
+			{
+				//build device
+				devStrc = buildUsbDevice(device, descriptor);
+
+				//do nothing else for this device
+				continue;
+			}
+
+			//get interface
+			interface = config->interface;
+			interfaceCount = interface->num_altsetting;
 
 			//set fields of deviceStruct via descriptor
 			devStrc = buildUsbDevice(device, descriptor);
@@ -465,6 +503,10 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 				sscanf(match, "%x:%x %[^\t\n]", &dontcare, &dontcare2, englishName);
 				detectedDevices.front().name = englishName;
 			}//END if match is null
+
+			//TODO: remove this and all other unnecessary loggings (Kenny Loggins?)
+			//LOG
+			cout<<detectedDevices.front().deviceType<<endl;
 
 			//empty list and move contents to cylon's list
 			et.detectedDevices.push_back(detectedDevices.front());
@@ -585,10 +627,206 @@ struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_d
 	device.id = s.str();
 	s << dec;
 
-	//TODO: grab bDeviceClass + bDeviceSubClass and interpret
-	device.deviceType		= ERROR_INT;
+	//grab bDeviceClass and interpret
+	int devType = descriptor.bDeviceClass;
+    cout<<"Descriptor Device Type: "<<hex<<devType<<dec<<endl;
+
+	//class per interface
+	if (devType == LIBUSB_CLASS_PER_INTERFACE)
+	{
+		//TODO: parse interface, if necessary
+		device.deviceType = ERROR_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_AUDIO)
+	{
+		device.deviceType = AUDIO_RENDER_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_COMM)
+	{
+		device.deviceType = AUDIO_CAPTURE_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_HID)
+	{
+		device.deviceType = HID_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_PHYSICAL)
+	{
+		device.deviceType = PHYSICAL_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_PRINTER)
+	{
+		device.deviceType = PRINTER_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_PTP || devType == LIBUSB_CLASS_IMAGE)
+	{
+		device.deviceType = IMAGE_SCANNER_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_MASS_STORAGE)
+	{
+		device.deviceType = STORAGE_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_HUB)
+	{
+		device.deviceType = HUB_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_DATA)
+	{
+		device.deviceType = COMMUNICATIONS_DATA_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_SMART_CARD)
+	{
+		device.deviceType = SMART_CARD_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_CONTENT_SECURITY)
+	{
+		device.deviceType = CONTENT_SECURITY_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_VIDEO)
+	{
+		device.deviceType = VIDEO_CAPTURE_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_PERSONAL_HEALTHCARE)
+	{
+		device.deviceType = PERSONAL_HEALTHCARE_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_DIAGNOSTIC_DEVICE)
+	{
+		device.deviceType = ERROR_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_WIRELESS)
+	{
+		device.deviceType = WIRELESS_PHONE_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_APPLICATION)
+	{
+		device.deviceType = ERROR_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_VENDOR_SPEC)
+	{
+		//Set error type
+		//TODO: parse this?
+		device.deviceType = ERROR_TYPE;
+	}
 
 	//Return
 	return device;
 }//END build device via libusb device/descriptor combo
+
+struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_device_descriptor descriptor, struct libusb_device_handle** )
+{
+	//Variable Declaration
+	struct deviceStruct device;
+
+	//set default values for fields that are unused in this context
+	device.panelLocation 	= ERROR_INT;
+	device.inLid			= ERROR_INT;
+	device.inDock			= ERROR_INT;
+	device.isDefault		= ERROR_INT;
+	device.orientation		= NO_ROTATION;
+	device.displayIndex		= ERROR_INT;
+	device.controllerIndex  = ERROR_INT;
+	device.storageIndex		= ERROR_INT;
+	device.sensorsIndex		= ERROR_INT;
+	device.name				= ERROR_STRING;
+	device.isEnabled		= 1;
+
+	//grab fields from arguments
+	device.vendorID			= descriptor.idVendor;
+
+	//Convert id to string and save it
+	//Credit to Benoit @ stackoverflow for partial method code
+	ostringstream s;
+	s << hex<< setfill('0')<<setw(4)<< descriptor.idProduct;
+	device.id = s.str();
+	s << dec;
+
+	//grab bDeviceClass and interpret
+	int devType = descriptor.bDeviceClass;
+	int intType = 0;
+
+	//TODO: remove this
+	//LOG
+    cout<<"Descriptor Device Type: "<<hex<<devType<<dec<<endl;
+    cout<<"Interface Device Type: "<<hex<<intType<<dec<<endl;
+
+	//class per interface
+	if (devType == LIBUSB_CLASS_PER_INTERFACE)
+	{
+		//TODO: parse interface, if necessary
+		device.deviceType = ERROR_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_AUDIO)
+	{
+		device.deviceType = AUDIO_RENDER_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_COMM)
+	{
+		device.deviceType = AUDIO_CAPTURE_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_HID)
+	{
+		device.deviceType = HID_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_PHYSICAL)
+	{
+		device.deviceType = PHYSICAL_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_PRINTER)
+	{
+		device.deviceType = PRINTER_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_PTP || devType == LIBUSB_CLASS_IMAGE)
+	{
+		device.deviceType = IMAGE_SCANNER_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_MASS_STORAGE)
+	{
+		device.deviceType = STORAGE_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_HUB)
+	{
+		device.deviceType = HUB_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_DATA)
+	{
+		device.deviceType = COMMUNICATIONS_DATA_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_SMART_CARD)
+	{
+		device.deviceType = SMART_CARD_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_CONTENT_SECURITY)
+	{
+		device.deviceType = CONTENT_SECURITY_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_VIDEO)
+	{
+		device.deviceType = VIDEO_CAPTURE_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_PERSONAL_HEALTHCARE)
+	{
+		device.deviceType = PERSONAL_HEALTHCARE_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_DIAGNOSTIC_DEVICE)
+	{
+		device.deviceType = ERROR_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_WIRELESS)
+	{
+		device.deviceType = WIRELESS_PHONE_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_APPLICATION)
+	{
+		device.deviceType = ERROR_TYPE;
+	}
+	else if (devType == LIBUSB_CLASS_VENDOR_SPEC)
+	{
+		//Set error type
+		//TODO: parse this?
+		device.deviceType = ERROR_TYPE;
+	}
+
+	//Return
+	return device;
+}
 //END builders
