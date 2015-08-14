@@ -100,6 +100,6 @@ struct cylonStruct buildEllen();
 struct deviceStruct buildBlankDevice();
 struct deviceStruct buildUsbDevice(struct libusb_device*);
 struct deviceStruct buildUsbDevice(struct libusb_device*, struct libusb_device_descriptor descriptor);
-struct deviceStruct buildUsbDevice(struct libusb_device* device, struct libusb_device_descriptor descriptor, struct libusb_device_handle**);
+struct deviceStruct buildUsbDevice(struct libusb_device* device, struct libusb_device_descriptor descriptor, int interfaceClass);
 
 #endif /* ELLEN_H_ */

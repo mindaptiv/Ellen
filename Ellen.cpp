@@ -382,17 +382,18 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 	libusb_device *device;
 	int i = 0;
 
+	int		interfaceClass;
+
 	//iterate over the devices retrieved
 	while ( (device = devices[i++]) != NULL )
 	{
 		//Variable Declaration
 		struct libusb_device_descriptor descriptor;
 		struct libusb_config_descriptor* config;
-		struct libusb_device_handle* handle;
 		const struct libusb_interface* interface;
+		const struct libusb_interface_descriptor* interfaceDescriptor;
 		struct deviceStruct devStrc;
 		int 	result;
-		int 	interfaceCount;
 
 			//Grab description for device
 			result = libusb_get_device_descriptor(device, &descriptor);
@@ -407,23 +408,6 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 				continue;
 			}//END if error
 
-
-			//grab the handle
-			result = libusb_open(device, &handle);
-
-			//check for errors
-			if (result < 0)
-			{
-				//build device
-				devStrc = buildUsbDevice(device, descriptor);
-
-				//do nothing else for this device
-				continue;
-			}
-
-			//get interface 0
-			//result = libusb_claim_interface(handle, 0);
-
 			//get config descriptor
 			result = libusb_get_active_config_descriptor(device, &config);
 
@@ -437,12 +421,13 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 				continue;
 			}
 
-			//get interface
+			//get interface class
 			interface = config->interface;
-			interfaceCount = interface->num_altsetting;
+			interfaceDescriptor = interface->altsetting;
+			interfaceClass = interfaceDescriptor->bInterfaceClass;
 
 			//set fields of deviceStruct via descriptor
-			devStrc = buildUsbDevice(device, descriptor);
+			devStrc = buildUsbDevice(device, descriptor, interfaceClass);
 
 			//place deviceStruct in the back of the devices list
 			detectedDevices.insert(detectedDevices.end(), devStrc);
@@ -504,9 +489,7 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 				detectedDevices.front().name = englishName;
 			}//END if match is null
 
-			//TODO: remove this and all other unnecessary loggings (Kenny Loggins?)
-			//LOG
-			cout<<detectedDevices.front().deviceType<<endl;
+			//TODO: remove all other unnecessary loggings (Kenny Loggins?)
 
 			//empty list and move contents to cylon's list
 			et.detectedDevices.push_back(detectedDevices.front());
@@ -552,10 +535,10 @@ struct cylonStruct buildEllen()
 	struct cylonStruct ellen;
 
 	//fill table
-	fillTable();
+	//fillTable();
 
 	//open libs
-	openLibs();
+	//openLibs();
 
 	//producers
 	produceUserProfile(ellen);
@@ -567,7 +550,7 @@ struct cylonStruct buildEllen()
 	produceLog(ellen);
 
 	//close libs
-	closeLibs();
+	//closeLibs();
 
 	//return
 	return ellen;
@@ -629,7 +612,7 @@ struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_d
 
 	//grab bDeviceClass and interpret
 	int devType = descriptor.bDeviceClass;
-    cout<<"Descriptor Device Type: "<<hex<<devType<<dec<<endl;
+    cout<<"DevType Value in Constructor: "<<hex<<devType<<dec<<endl;
 
 	//class per interface
 	if (devType == LIBUSB_CLASS_PER_INTERFACE)
@@ -704,7 +687,10 @@ struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_d
 	else if (devType == LIBUSB_CLASS_VENDOR_SPEC)
 	{
 		//Set error type
-		//TODO: parse this?
+		device.deviceType = ERROR_TYPE;
+	}
+	else
+	{
 		device.deviceType = ERROR_TYPE;
 	}
 
@@ -712,7 +698,7 @@ struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_d
 	return device;
 }//END build device via libusb device/descriptor combo
 
-struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_device_descriptor descriptor, struct libusb_device_handle** )
+struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_device_descriptor descriptor, int interfaceClass )
 {
 	//Variable Declaration
 	struct deviceStruct device;
@@ -742,18 +728,18 @@ struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_d
 
 	//grab bDeviceClass and interpret
 	int devType = descriptor.bDeviceClass;
-	int intType = 0;
 
-	//TODO: remove this
-	//LOG
-    cout<<"Descriptor Device Type: "<<hex<<devType<<dec<<endl;
-    cout<<"Interface Device Type: "<<hex<<intType<<dec<<endl;
+	//use interface type instead
+	if (devType == LIBUSB_CLASS_PER_INTERFACE)
+	{
+		devType = interfaceClass;
+	}
 
 	//class per interface
 	if (devType == LIBUSB_CLASS_PER_INTERFACE)
 	{
-		//TODO: parse interface, if necessary
-		device.deviceType = ERROR_TYPE;
+		//should already be using class interface if we get here, so this is bizarre and probably wrong
+		device.deviceType = ERROR_INT;
 	}
 	else if (devType == LIBUSB_CLASS_AUDIO)
 	{
@@ -822,7 +808,10 @@ struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_d
 	else if (devType == LIBUSB_CLASS_VENDOR_SPEC)
 	{
 		//Set error type
-		//TODO: parse this?
+		device.deviceType = ERROR_TYPE;
+	}
+	else
+	{
 		device.deviceType = ERROR_TYPE;
 	}
 
