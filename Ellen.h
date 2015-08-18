@@ -48,6 +48,28 @@ static const int ERROR_INT 				= 0;
 static const int NUMBER_OF_VERSIONS_TO_LOOK_FORWARD = 5;
 
 //The number of methods to load for a given library
+static const int LIBUSB_FUNCTION_COUNT 					= 6;
+static const int LIBUSB_LATEST_VERSION 					= 0;
+static const char* LIBUSB_LIB_NAME 						= "libusb.so";//"x86_64-linux-gnu/libusb.so";
+static const char* LIBUSB_INIT 							= "usb_init";
+static const char* LIBUSB_GET_DEVICE_LIST 				= "usb_get_device_list";
+static const char* LIBUSB_GET_DEVICE_DESCRIPTOR 		= "usb_get_device_descriptor";
+static const char* LIBUSB_GET_ACTIVE_CONFIG_DESCRIPTOR 	= "usb_get_active_config_descriptor";
+static const char* LIBUSB_FREE_DEVICE_LIST 				= "usb_free_device_list";
+static const char* LIBUSB_EXIT 							= "usb_exit";
+
+//FUNCTIONS TO CALL
+/*
+ * libusb_init(&context)
+ * libusb_get_device_list(context, &devices)
+ * libusb_get_device_descriptor(device, &descriptor)
+ * libusb_get_active_config_descriptor(device, &config)
+ * libusb_free_device_list(devices, 1)
+ * libusb_exit(context)
+ *
+ */
+
+
 static const int LIBC_FUNCTION_COUNT = 4;
 static const int LIBC_LATEST_VERSION = 6;
 static const char* LIBC_LIB_NAME = "libc.so";
@@ -73,7 +95,8 @@ struct dynLib
 
 enum libraries
 {
-	libc,
+//	libc,
+	libusb,
 	libCount
 };
 //END structs

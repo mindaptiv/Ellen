@@ -37,16 +37,56 @@ libFunc libcFunctions[LIBC_FUNCTION_COUNT] =
 		}
 };//END libcFunctions
 
+libFunc libusbFunctions[LIBUSB_FUNCTION_COUNT] =
+{
+		{
+			LIBUSB_INIT,
+			NULL
+		},
+
+		{
+			LIBUSB_GET_DEVICE_LIST,
+			NULL
+		},
+
+		{
+			LIBUSB_GET_DEVICE_DESCRIPTOR,
+			NULL
+		},
+
+		{
+			LIBUSB_GET_ACTIVE_CONFIG_DESCRIPTOR,
+			NULL
+		},
+
+		{
+			LIBUSB_FREE_DEVICE_LIST,
+			NULL
+		},
+
+		{
+			LIBUSB_EXIT,
+			NULL
+		},
+};
+
 void fillTable()
 {
 	//Fill allLibs with info
-	allLibs[libc].libName = LIBC_LIB_NAME;
+
+	//libc
+/*	allLibs[libc].libName = LIBC_LIB_NAME;
 	allLibs[libc].libAddr = NULL;
 	allLibs[libc].versionNumber = LIBC_LATEST_VERSION;
 	allLibs[libc].funcCount = LIBC_FUNCTION_COUNT;
-	allLibs[libc].functions = libcFunctions;
+	allLibs[libc].functions = libcFunctions; */
 
-
+	//libusb
+	allLibs[libusb].libName = LIBUSB_LIB_NAME;
+	allLibs[libusb].libAddr = NULL;
+	allLibs[libusb].versionNumber = LIBUSB_LATEST_VERSION;
+	allLibs[libusb].funcCount = LIBUSB_FUNCTION_COUNT;
+	allLibs[libusb].functions = libusbFunctions;
 }//END method
 
 void openLibs()
@@ -60,13 +100,14 @@ void openLibs()
 		for (int j = (allLibs[i].versionNumber + NUMBER_OF_VERSIONS_TO_LOOK_FORWARD); j >= 0; j--)
 		{
 			//LOG
-			cout<<"Checking for library version # "<<j<<endl;
+			//cout<<"Checking for library version # "<<j<<endl;
 
 			//attempt dlopen
 			if(j == 0)
 			{
 				//just use file name for if no numbered version works
-				allLibs[i].libAddr  = dlopen(allLibs[i].libName, RTLD_NOW);
+				allLibs[i].libAddr  = dlopen("libusb.so", RTLD_LAZY);
+				//cout<<"Name: "<<allLibs[i].libName<<endl;
 			}
 			else
 			{
@@ -78,7 +119,10 @@ void openLibs()
 
 				//attempt to open
 				allLibs[i].libAddr = dlopen(libraryName, RTLD_LAZY);
+				//cout<<"Modified Name: "<<libraryName<<endl;
 			}//END  elsif J == 0
+
+
 
 			//if lib loaded successfully
 			if(allLibs[i].libAddr != NULL)
@@ -87,19 +131,40 @@ void openLibs()
 				//Grab the functions
 				for (int k = 0; k < allLibs[i].funcCount; k++ )
 				{
+					/*char* errstr;
+					errstr = dlerror();
+					printf("This happened: (%s)\n", errstr);
+					*/
+
 					allLibs[i].functions[k].funcAddr = dlsym(allLibs[i].libAddr, allLibs[i].functions[k].funcName);
+					//void* addressio = dlsym(libAddr, allLibs[i].functions[k].funcName);
+					//cout<<"ADDRESSIO: "<<addressio<<endl;
+
+					//typedef void (*usb_init_t)(void);
+					//void* addressio;
+					//addressio = dlsym(allLibs[i].libAddr, "libusb_init");
 
 					if(allLibs[i].functions[k].funcAddr == NULL)
+					//if (addressio == NULL)
 					{
 						//LOG
 						cout<<"Method "<<k<<", "<<allLibs[i].functions[k].funcName<<" not found!"<<endl;
 						continue;
+					}
+					else
+					{
+						cout<<"Method "<<k<<", "<<allLibs[i].functions[k].funcName<<" found!"<<endl;
 					}
 				}//END function for loop
 
 				//successfully grabbed lib and functions
 				return;
 			}//end if lib loaded successfully
+
+			else
+			{
+				cout<<"Didn't find a library"<<endl;
+			}
 		}//END inner for
 	}//END outer for
 }//END func
@@ -535,10 +600,10 @@ struct cylonStruct buildEllen()
 	struct cylonStruct ellen;
 
 	//fill table
-	//fillTable();
+	fillTable();
 
 	//open libs
-	//openLibs();
+	openLibs();
 
 	//producers
 	produceUserProfile(ellen);
