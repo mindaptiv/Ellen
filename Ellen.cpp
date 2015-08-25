@@ -106,7 +106,7 @@ void openLibs()
 			if(j == 0)
 			{
 				//just use file name for if no numbered version works
-				allLibs[i].libAddr  = dlopen("libusb.so", RTLD_LAZY);
+				allLibs[i].libAddr  = dlopen(allLibs[i].libName, RTLD_LAZY);
 				//cout<<"Name: "<<allLibs[i].libName<<endl;
 			}
 			else
@@ -137,12 +137,26 @@ void openLibs()
 					*/
 
 					allLibs[i].functions[k].funcAddr = dlsym(allLibs[i].libAddr, allLibs[i].functions[k].funcName);
+
+					//int libusb_get_device_descriptor ( libusb_device* dev, struct libusb_device_descriptor* descr )
+					//_usb_get_device_descriptor = (usb_get_device_descriptor_t) dlsym(allLibs[i].libAddr, "libusb_get_device_descriptor");
+
+
+
+
 					//void* addressio = dlsym(libAddr, allLibs[i].functions[k].funcName);
 					//cout<<"ADDRESSIO: "<<addressio<<endl;
 
 					//typedef void (*usb_init_t)(void);
 					//void* addressio;
-					//addressio = dlsym(allLibs[i].libAddr, "libusb_init");
+					//addressio = dlsym(allLibs[i].libAddr, "libusb_get_device_list");
+
+					char* errstr;
+					errstr = dlerror();
+					printf("This happened: (%s)\n", errstr);
+
+
+					//cout<<"Here's method address: "<<addressio<<endl;
 
 					if(allLibs[i].functions[k].funcAddr == NULL)
 					//if (addressio == NULL)

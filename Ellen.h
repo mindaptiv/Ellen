@@ -35,6 +35,9 @@
 #include <dlfcn.h>
 #include <libusb-1.0/libusb.h>
 
+typedef int (*usb_get_device_descriptor_t)(libusb_device* dev, libusb_device_descriptor* descr);
+static usb_get_device_descriptor_t _usb_get_device_descriptor = NULL;
+
 //Constants
 //path to profile image
 static const std::string AVATAR_PATH = "/var/lib/AccountsService/icons/";
@@ -50,13 +53,13 @@ static const int NUMBER_OF_VERSIONS_TO_LOOK_FORWARD = 5;
 //The number of methods to load for a given library
 static const int LIBUSB_FUNCTION_COUNT 					= 6;
 static const int LIBUSB_LATEST_VERSION 					= 0;
-static const char* LIBUSB_LIB_NAME 						= "libusb.so";//"x86_64-linux-gnu/libusb.so";
-static const char* LIBUSB_INIT 							= "usb_init";
-static const char* LIBUSB_GET_DEVICE_LIST 				= "usb_get_device_list";
-static const char* LIBUSB_GET_DEVICE_DESCRIPTOR 		= "usb_get_device_descriptor";
-static const char* LIBUSB_GET_ACTIVE_CONFIG_DESCRIPTOR 	= "usb_get_active_config_descriptor";
-static const char* LIBUSB_FREE_DEVICE_LIST 				= "usb_free_device_list";
-static const char* LIBUSB_EXIT 							= "usb_exit";
+static const char* LIBUSB_LIB_NAME 						= /*"libusb.so";*/ "libusb-1.0.so.0.1.0";
+static const char* LIBUSB_INIT 							= "libusb_init";
+static const char* LIBUSB_GET_DEVICE_LIST 				= "libusb_get_device_list";
+static const char* LIBUSB_GET_DEVICE_DESCRIPTOR 		= "libusb_get_device_descriptor";
+static const char* LIBUSB_GET_ACTIVE_CONFIG_DESCRIPTOR 	= "libusb_get_active_config_descriptor";
+static const char* LIBUSB_FREE_DEVICE_LIST 				= "libusb_free_device_list";
+static const char* LIBUSB_EXIT 							= "libusb_exit";
 
 //FUNCTIONS TO CALL
 /*
