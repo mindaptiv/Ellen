@@ -136,30 +136,11 @@ void openLibs()
 					printf("This happened: (%s)\n", errstr);
 					*/
 
+					//Grab function address
 					allLibs[i].functions[k].funcAddr = dlsym(allLibs[i].libAddr, allLibs[i].functions[k].funcName);
 
-					//int libusb_get_device_descriptor ( libusb_device* dev, struct libusb_device_descriptor* descr )
-					//_usb_get_device_descriptor = (usb_get_device_descriptor_t) dlsym(allLibs[i].libAddr, "libusb_get_device_descriptor");
-
-
-
-
-					//void* addressio = dlsym(libAddr, allLibs[i].functions[k].funcName);
-					//cout<<"ADDRESSIO: "<<addressio<<endl;
-
-					//typedef void (*usb_init_t)(void);
-					//void* addressio;
-					//addressio = dlsym(allLibs[i].libAddr, "libusb_get_device_list");
-
-					char* errstr;
-					errstr = dlerror();
-					printf("This happened: (%s)\n", errstr);
-
-
-					//cout<<"Here's method address: "<<addressio<<endl;
-
+					//If function is not located
 					if(allLibs[i].functions[k].funcAddr == NULL)
-					//if (addressio == NULL)
 					{
 						//LOG
 						cout<<"Method "<<k<<", "<<allLibs[i].functions[k].funcName<<" not found!"<<endl;
@@ -192,6 +173,7 @@ void closeLibs()
 		//LOG
 		cout<<"Closing library #"<<i<<endl;
 
+		//TODO: Handle closing of library that did not get opened
 		int close = dlclose(allLibs[i].libAddr);
 
 		if (close != 0)
