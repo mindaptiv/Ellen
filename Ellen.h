@@ -35,8 +35,14 @@
 #include <dlfcn.h>
 #include <libusb-1.0/libusb.h>
 
-typedef int (*usb_get_device_descriptor_t)(libusb_device* dev, libusb_device_descriptor* descr);
-static usb_get_device_descriptor_t _usb_get_device_descriptor = NULL;
+//credit to xc3sprog for partial dynamic libusb code ideas
+typedef int 	(*libusb_init_t)(libusb_context** context);
+typedef void 	(*libusb_exit_t)(libusb_context* context);
+typedef ssize_t (*libusb_get_device_list_t)(libusb_context* context, libusb_device** list);
+typedef void    (*libusb_free_device_list)(libusb_device** list, int unref_devices);
+typedef int 	(*libusb_get_device_descriptor_t)(libusb_device* device, libusb_device_descriptor* descriptor);
+typedef int 	(*libusb_get_active_config_descriptor_t)(libusb_device* device, libusb_config_descriptor** config);
+
 
 //Constants
 //path to profile image

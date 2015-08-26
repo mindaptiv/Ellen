@@ -74,13 +74,6 @@ void fillTable()
 {
 	//Fill allLibs with info
 
-	//libc
-/*	allLibs[libc].libName = LIBC_LIB_NAME;
-	allLibs[libc].libAddr = NULL;
-	allLibs[libc].versionNumber = LIBC_LATEST_VERSION;
-	allLibs[libc].funcCount = LIBC_FUNCTION_COUNT;
-	allLibs[libc].functions = libcFunctions; */
-
 	//libusb
 	allLibs[libusb].libName = LIBUSB_LIB_NAME;
 	allLibs[libusb].libAddr = NULL;
@@ -414,7 +407,6 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 {
 	//Credit to LibUSB examples for partial method code
 	//Variable Declaration:
-
 	//device array
 	libusb_device** devices;
 	libusb_context* context;
@@ -423,6 +415,10 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 
 	//init lib & session
 	result = libusb_init(&context);
+
+	//Convert method to type
+	//static usb_init_t _usb_init = (usb_init_t) allLibs[
+
 
 	//check for errors
 	if(result < 0)
