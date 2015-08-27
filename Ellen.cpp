@@ -14,30 +14,7 @@ using namespace std;
 //Constant for how many versions in the future we look forward for checking lib #'s
 dynLib allLibs[libCount];
 
-libFunc libcFunctions[LIBC_FUNCTION_COUNT] =
-{
-		{
-			LIBC_GETEUID,
-			NULL
-		},
-
-		{
-			"",
-			NULL
-		},
-
-		{
-			"",
-			NULL
-		},
-
-		{
-			"",
-			NULL
-		}
-};//END libcFunctions
-
-libFunc libusbFunctions[LIBUSB_FUNCTION_COUNT] =
+libFunc libusbFunctions[libusbCount] =
 {
 		{
 			LIBUSB_INIT,
@@ -78,7 +55,7 @@ void fillTable()
 	allLibs[libusb].libName = LIBUSB_LIB_NAME;
 	allLibs[libusb].libAddr = NULL;
 	allLibs[libusb].versionNumber = LIBUSB_LATEST_VERSION;
-	allLibs[libusb].funcCount = LIBUSB_FUNCTION_COUNT;
+	allLibs[libusb].funcCount = libusbCount;
 	allLibs[libusb].functions = libusbFunctions;
 }//END method
 
@@ -86,21 +63,14 @@ void openLibs()
 {
 	for (int i = 0; i< libCount; i++)
 	{
-		//LOG
-		cout<<"Current lib: "<<i<<endl;
-
 		//Iterate over versions until we find one that successfully dlopens
 		for (int j = (allLibs[i].versionNumber + NUMBER_OF_VERSIONS_TO_LOOK_FORWARD); j >= 0; j--)
 		{
-			//LOG
-			//cout<<"Checking for library version # "<<j<<endl;
-
 			//attempt dlopen
 			if(j == 0)
 			{
 				//just use file name for if no numbered version works
 				allLibs[i].libAddr  = dlopen(allLibs[i].libName, RTLD_LAZY);
-				//cout<<"Name: "<<allLibs[i].libName<<endl;
 			}
 			else
 			{
@@ -112,7 +82,6 @@ void openLibs()
 
 				//attempt to open
 				allLibs[i].libAddr = dlopen(libraryName, RTLD_LAZY);
-				//cout<<"Modified Name: "<<libraryName<<endl;
 			}//END  elsif J == 0
 
 
@@ -120,7 +89,6 @@ void openLibs()
 			//if lib loaded successfully
 			if(allLibs[i].libAddr != NULL)
 			{
-				cout<<"Library found!"<<endl;
 				//Grab the functions
 				for (int k = 0; k < allLibs[i].funcCount; k++ )
 				{
@@ -131,28 +99,11 @@ void openLibs()
 
 					//Grab function address
 					allLibs[i].functions[k].funcAddr = dlsym(allLibs[i].libAddr, allLibs[i].functions[k].funcName);
-
-					//If function is not located
-					if(allLibs[i].functions[k].funcAddr == NULL)
-					{
-						//LOG
-						cout<<"Method "<<k<<", "<<allLibs[i].functions[k].funcName<<" not found!"<<endl;
-						continue;
-					}
-					else
-					{
-						cout<<"Method "<<k<<", "<<allLibs[i].functions[k].funcName<<" found!"<<endl;
-					}
 				}//END function for loop
 
 				//successfully grabbed lib and functions
 				return;
 			}//end if lib loaded successfully
-
-			else
-			{
-				cout<<"Didn't find a library"<<endl;
-			}
 		}//END inner for
 	}//END outer for
 }//END func
@@ -413,12 +364,11 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 	int result;
 	std::list<struct deviceStruct> detectedDevices;
 
-	//init lib & session
-	result = libusb_init(&context);
-
 	//Convert method to type
-	//static usb_init_t _usb_init = (usb_init_t) allLibs[
+	libusb_init_t _libusb_init = (libusb_init_t) allLibs[libusb].functions[libusb_init_e].funcAddr;
 
+	//init lib & session
+	result = _libusb_init(&context);
 
 	//check for errors
 	if(result < 0)
@@ -426,8 +376,11 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 		return;
 	}
 
+	//Convert method to type
+	libusb_get_device_list_t _libusb_get_device_list = (libusb_get_device_list_t) allLibs[libusb].functions[libusb_get_device_list_e].funcAddr;
+
 	//grab devices
-	libusb_get_device_list(context, &devices);
+	_libusb_get_device_list(context, &devices);
 
 	//check for errors
 	if(result < 0)
@@ -439,7 +392,7 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 	libusb_device *device;
 	int i = 0;
 
-	int		interfaceClass;
+	int	interfaceClass;
 
 	//iterate over the devices retrieved
 	while ( (device = devices[i++]) != NULL )
@@ -452,8 +405,11 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 		struct deviceStruct devStrc;
 		int 	result;
 
+			//Convert method to type
+			libusb_get_device_descriptor_t _libusb_get_device_descriptor = (libusb_get_device_descriptor_t) allLibs[libusb].functions[libusb_get_device_descriptor_e].funcAddr;
+
 			//Grab description for device
-			result = libusb_get_device_descriptor(device, &descriptor);
+			result = _libusb_get_device_descriptor(device, &descriptor);
 
 			//Check for errors
 			if (result < 0)
@@ -465,8 +421,11 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 				continue;
 			}//END if error
 
+			//convert method to type
+			libusb_get_active_config_descriptor_t _libusb_get_active_config_descriptor = (libusb_get_active_config_descriptor_t) allLibs[libusb].functions[libusb_get_active_config_descriptor_e].funcAddr;
+
 			//get config descriptor
-			result = libusb_get_active_config_descriptor(device, &config);
+			result = _libusb_get_active_config_descriptor(device, &config);
 
 			//check for errors
 			if (result < 0)
@@ -490,15 +449,21 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 			detectedDevices.insert(detectedDevices.end(), devStrc);
 		}//END while
 
+		//convert method to type
+		libusb_free_device_list_t _libusb_free_device_list = (libusb_free_device_list_t) allLibs[libusb].functions[libusb_free_device_list_e].funcAddr;
+
 		//free the list
-		libusb_free_device_list(devices, 1);
+		_libusb_free_device_list(devices, 1);
+
+		//convert method to type
+		libusb_exit_t _libusb_exit = (libusb_exit_t) allLibs[libusb].functions[libusb_exit_e].funcAddr;
 
 		//exit from lib
-		libusb_exit(context);
+		_libusb_exit(context);
 
 		//TODO: handle special device types (controllers, etc.)
-		//grab the lsusb output (if available)
 
+		//grab the lsusb output (if available)
 		//Variable Declaration
 		char buffer[8192];
 		const char* consoleCommand = "lsusb";

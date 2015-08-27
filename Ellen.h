@@ -14,7 +14,6 @@
 //custom
 #include "Cylon.h"
 
-
 //included in Linux Standard Base
 #include <stdio.h>  		//libc
 #include <pwd.h>    		//libc
@@ -27,19 +26,19 @@
 #include <stdlib.h>         //libc
 #include <sstream>			//libstdc++
 #include <iostream> 		//libstdc++
-#include <iomanip>
+#include <iomanip>			//libstdc++
 #include <fstream>			//libstdc++
 #include <limits.h>			//libstdc++
 
 //other
-#include <dlfcn.h>
-#include <libusb-1.0/libusb.h>
+#include <dlfcn.h>				//libdl
+#include <libusb-1.0/libusb.h>	//libusb
 
 //credit to xc3sprog for partial dynamic libusb code ideas
 typedef int 	(*libusb_init_t)(libusb_context** context);
 typedef void 	(*libusb_exit_t)(libusb_context* context);
-typedef ssize_t (*libusb_get_device_list_t)(libusb_context* context, libusb_device** list);
-typedef void    (*libusb_free_device_list)(libusb_device** list, int unref_devices);
+typedef ssize_t (*libusb_get_device_list_t)(libusb_context* context, libusb_device*** list);
+typedef void    (*libusb_free_device_list_t)(libusb_device** list, int unref_devices);
 typedef int 	(*libusb_get_device_descriptor_t)(libusb_device* device, libusb_device_descriptor* descriptor);
 typedef int 	(*libusb_get_active_config_descriptor_t)(libusb_device* device, libusb_config_descriptor** config);
 
@@ -57,7 +56,6 @@ static const int ERROR_INT 				= 0;
 static const int NUMBER_OF_VERSIONS_TO_LOOK_FORWARD = 5;
 
 //The number of methods to load for a given library
-static const int LIBUSB_FUNCTION_COUNT 					= 6;
 static const int LIBUSB_LATEST_VERSION 					= 0;
 static const char* LIBUSB_LIB_NAME 						= /*"libusb.so";*/ "libusb-1.0.so.0.1.0";
 static const char* LIBUSB_INIT 							= "libusb_init";
@@ -66,23 +64,6 @@ static const char* LIBUSB_GET_DEVICE_DESCRIPTOR 		= "libusb_get_device_descripto
 static const char* LIBUSB_GET_ACTIVE_CONFIG_DESCRIPTOR 	= "libusb_get_active_config_descriptor";
 static const char* LIBUSB_FREE_DEVICE_LIST 				= "libusb_free_device_list";
 static const char* LIBUSB_EXIT 							= "libusb_exit";
-
-//FUNCTIONS TO CALL
-/*
- * libusb_init(&context)
- * libusb_get_device_list(context, &devices)
- * libusb_get_device_descriptor(device, &descriptor)
- * libusb_get_active_config_descriptor(device, &config)
- * libusb_free_device_list(devices, 1)
- * libusb_exit(context)
- *
- */
-
-
-static const int LIBC_FUNCTION_COUNT = 4;
-static const int LIBC_LATEST_VERSION = 6;
-static const char* LIBC_LIB_NAME = "libc.so";
-static const char* LIBC_GETEUID = "geteuid";
 
 //Structs
 //Function loaded from library
@@ -104,9 +85,19 @@ struct dynLib
 
 enum libraries
 {
-//	libc,
 	libusb,
 	libCount
+};
+
+enum usbFunctions
+{
+	libusb_init_e,
+	libusb_get_device_list_e,
+	libusb_get_device_descriptor_e,
+	libusb_get_active_config_descriptor_e,
+	libusb_free_device_list_e,
+	libusb_exit_e,
+	libusbCount
 };
 //END structs
 
