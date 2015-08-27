@@ -561,6 +561,13 @@ void produceLog(struct cylonStruct& et)
 	for(list<deviceStruct>::const_iterator iterator = et.detectedDevices.begin(), end = et.detectedDevices.end(); iterator != end; ++iterator)
 	{
 		cout<<"\t"<<"Name: "<<iterator->name<<endl;
+		cout<<"\t"<<"Type: "<<iterator->deviceType<<endl;
+		cout<<"\t"<<"Vendor ID: "<<hex<<iterator->vendorID<<dec<<endl;
+		cout<<"\t"<<"Id: "<<iterator->id<<endl;
+		cout<<"\t"<<"Orientation: "<<iterator->orientation<<endl;
+		cout<<"\t"<<"Controller Index: "<<iterator->controllerIndex<<endl;
+		cout<<"\t"<<"Display Index: "<<iterator->displayIndex<<endl;
+		cout<<"\t"<<"Storage Index: "<<iterator->storageIndex<<endl<<endl;
 	}
 }//END produceLog
 //END PRODUCERS
