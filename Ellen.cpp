@@ -132,7 +132,7 @@ void closeLibs()
 
 		if (close != 0)
 		{
-			cout<<"Error closing library "<<i<<endl;
+			//Could possibly handle errors somehow here.  Have yet to reach this point when dlclose fails
 		}//END if error
 	}//END for
 }//END method
@@ -368,7 +368,6 @@ void produceUsbDeviceInfo(struct cylonStruct& et)
 	if (!allLibs[libusb].opened)
 	{
 		//Get out, this method won't work without libusb loaded!
-		cout<<"Not running produceUsbDeviceInfo"<<endl;
 		return;
 	}
 
@@ -576,7 +575,7 @@ struct cylonStruct buildEllen()
 	fillTable();
 
 	//open libs
-	//openLibs();
+	openLibs();
 
 	//producers
 	produceUserProfile(ellen);
@@ -650,7 +649,6 @@ struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_d
 
 	//grab bDeviceClass and interpret
 	int devType = descriptor.bDeviceClass;
-    cout<<"DevType Value in Constructor: "<<hex<<devType<<dec<<endl;
 
 	//class per interface
 	if (devType == LIBUSB_CLASS_PER_INTERFACE)
