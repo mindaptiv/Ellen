@@ -81,6 +81,7 @@ struct dynLib
 	int    versionNumber;
 	int    funcCount;
 	libFunc* functions;
+	bool	opened;
 };
 
 enum libraries

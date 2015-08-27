@@ -57,6 +57,7 @@ void fillTable()
 	allLibs[libusb].versionNumber = LIBUSB_LATEST_VERSION;
 	allLibs[libusb].funcCount = libusbCount;
 	allLibs[libusb].functions = libusbFunctions;
+	allLibs[libusb].opened = false;
 }//END method
 
 void openLibs()
@@ -84,11 +85,12 @@ void openLibs()
 				allLibs[i].libAddr = dlopen(libraryName, RTLD_LAZY);
 			}//END  elsif J == 0
 
-
-
 			//if lib loaded successfully
 			if(allLibs[i].libAddr != NULL)
 			{
+				//set opened to true
+				allLibs[i].opened = true;
+
 				//Grab the functions
 				for (int k = 0; k < allLibs[i].funcCount; k++ )
 				{
@@ -113,18 +115,25 @@ void closeLibs()
 	//iterate through allLibs
 	for (int i = 0; i < libCount; i++)
 	{
-		//close it
-		//LOG
-		cout<<"Closing library #"<<i<<endl;
+		//Variable Declaration
+		int close;
 
-		//TODO: Handle closing of library that did not get opened
-		int close = dlclose(allLibs[i].libAddr);
+		//if the library was marked as opened
+		if(allLibs[i].opened)
+		{
+			//Close it
+			close = dlclose(allLibs[i].libAddr);
+			allLibs[i].opened = false;
+		}
+		else
+		{
+			close = 0;
+		}//end IF opened
 
 		if (close != 0)
 		{
-			cout<<"Error closing library."<<endl;
-			continue;
-		}//END if
+			cout<<"Error closing library "<<i<<endl;
+		}//END if error
 	}//END for
 }//END method
 //END DYLIB stuff
@@ -356,6 +365,13 @@ void produceDeviceInfo(struct cylonStruct& et)
 
 void produceUsbDeviceInfo(struct cylonStruct& et)
 {
+	if (!allLibs[libusb].opened)
+	{
+		//Get out, this method won't work without libusb loaded!
+		cout<<"Not running produceUsbDeviceInfo"<<endl;
+		return;
+	}
+
 	//Credit to LibUSB examples for partial method code
 	//Variable Declaration:
 	//device array
@@ -560,7 +576,7 @@ struct cylonStruct buildEllen()
 	fillTable();
 
 	//open libs
-	openLibs();
+	//openLibs();
 
 	//producers
 	produceUserProfile(ellen);
@@ -572,7 +588,7 @@ struct cylonStruct buildEllen()
 	produceLog(ellen);
 
 	//close libs
-	//closeLibs();
+	closeLibs();
 
 	//return
 	return ellen;
