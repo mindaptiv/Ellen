@@ -388,10 +388,32 @@ void produceDeviceInfo(struct cylonStruct& et)
 {
 	//Grab USB Devices
 	produceUsbDeviceInfo(et);
+	produceControllerInfo(et);
 
 	//Grab total count
 	et.detectedDeviceCount = et.detectedDevices.size();
 } //END produceDeviceInfo
+
+void produceControllerInfo(struct cylonStruct& et)
+{
+	//Cast functions
+	SDL_NumJoysticks_t 		_SDL_NumJoysticks 		= (SDL_NumJoysticks_t) allLibs[libsdl].functions[SDL_NumJoysticks_e].funcAddr;
+	SDL_IsGameController_t	_SDL_IsGameController 	= (SDL_IsGameController_t) allLibs[libsdl].functions[SDL_IsGameController_e].funcAddr;
+
+	//grab gamepad count
+	int gamepadCount = _SDL_NumJoysticks();
+
+	cout<<"Gamepads: "<<gamepadCount<<endl;
+
+	//Credit to SDL Wiki for partial method code
+	for (int i = 0; i < gamepadCount; i++)
+	{
+		if (_SDL_IsGameController(i) )
+		{
+			cout<<"Joystick "<<i<<" is supported by the game controller interface!"<<endl;
+		}
+	}
+}
 
 void produceUsbDeviceInfo(struct cylonStruct& et)
 {

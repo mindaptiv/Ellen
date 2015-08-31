@@ -33,6 +33,7 @@
 //other
 #include <dlfcn.h>				//libdl
 #include <libusb-1.0/libusb.h>	//libusb
+#include <SDL2/SDL.h>			//libsdl
 
 //credit to xc3sprog for partial dynamic libusb code ideas
 typedef int 	(*libusb_init_t)(libusb_context** context);
@@ -42,6 +43,9 @@ typedef void    (*libusb_free_device_list_t)(libusb_device** list, int unref_dev
 typedef int 	(*libusb_get_device_descriptor_t)(libusb_device* device, libusb_device_descriptor* descriptor);
 typedef int 	(*libusb_get_active_config_descriptor_t)(libusb_device* device, libusb_config_descriptor** config);
 
+//SDL function types
+typedef SDL_bool 	(*SDL_IsGameController_t)(int joystick_index);
+typedef int 		(*SDL_NumJoysticks_t)(void);
 
 //Constants
 //path to profile image
@@ -133,6 +137,7 @@ void produceProcessorInfo(struct cylonStruct& et);
 void produceMemoryInfo(struct cylonStruct & et);
 void produceDeviceInfo(struct cylonStruct& et);
 void produceUsbDeviceInfo(struct cylonStruct& et);
+void produceControllerInfo(struct cylonStruct& et);
 void produceLog(struct cylonStruct& et);
 
 //Builders
