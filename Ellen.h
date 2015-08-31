@@ -65,6 +65,13 @@ static const char* LIBUSB_GET_ACTIVE_CONFIG_DESCRIPTOR 	= "libusb_get_active_con
 static const char* LIBUSB_FREE_DEVICE_LIST 				= "libusb_free_device_list";
 static const char* LIBUSB_EXIT 							= "libusb_exit";
 
+static const int LIBSDL_LATEST_VERSION					= 0;
+static const char* LIBSDL_LIB_NAME						= "libSDL2-2.0.so.0.2.0";
+static const char* SDL_NUMJOYSTICKS						= "SDL_NumJoysticks";
+static const char* SDL_ISGAMECONTROLLER					= "SDL_IsGameController";
+
+//static const char*
+
 //Structs
 //Function loaded from library
 struct libFunc
@@ -86,6 +93,8 @@ struct dynLib
 
 enum libraries
 {
+//	libusb,
+	libsdl,
 	libusb,
 	libCount
 };
@@ -99,6 +108,13 @@ enum usbFunctions
 	libusb_free_device_list_e,
 	libusb_exit_e,
 	libusbCount
+};
+
+enum sdlFunctions
+{
+	SDL_NumJoysticks_e,
+	SDL_IsGameController_e,
+	libsdlCount
 };
 //END structs
 

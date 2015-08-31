@@ -14,6 +14,19 @@ using namespace std;
 //Constant for how many versions in the future we look forward for checking lib #'s
 dynLib allLibs[libCount];
 
+libFunc libsdlFunctions[libsdlCount] =
+{
+		{
+				SDL_NUMJOYSTICKS,
+				NULL
+		},
+
+		{
+				SDL_ISGAMECONTROLLER,
+				NULL
+		}
+};
+
 libFunc libusbFunctions[libusbCount] =
 {
 		{
@@ -47,6 +60,8 @@ libFunc libusbFunctions[libusbCount] =
 		},
 };
 
+
+
 void fillTable()
 {
 	//Fill allLibs with info
@@ -58,11 +73,19 @@ void fillTable()
 	allLibs[libusb].funcCount = libusbCount;
 	allLibs[libusb].functions = libusbFunctions;
 	allLibs[libusb].opened = false;
+
+	//libsdl
+	allLibs[libsdl].libName = LIBSDL_LIB_NAME;
+	allLibs[libsdl].libAddr = NULL;
+	allLibs[libsdl].versionNumber = LIBSDL_LATEST_VERSION;
+	allLibs[libsdl].funcCount = libsdlCount;
+	allLibs[libsdl].functions = libsdlFunctions;
+	allLibs[libsdl].opened = false;
 }//END method
 
 void openLibs()
 {
-	for (int i = 0; i< libCount; i++)
+	for (int i = 0; i < libCount; i++)
 	{
 		//Iterate over versions until we find one that successfully dlopens
 		for (int j = (allLibs[i].versionNumber + NUMBER_OF_VERSIONS_TO_LOOK_FORWARD); j >= 0; j--)
@@ -88,6 +111,7 @@ void openLibs()
 			//if lib loaded successfully
 			if(allLibs[i].libAddr != NULL)
 			{
+				cout<<"Found lib "<<allLibs[i].libName<<endl;
 				//set opened to true
 				allLibs[i].opened = true;
 
@@ -101,10 +125,16 @@ void openLibs()
 
 					//Grab function address
 					allLibs[i].functions[k].funcAddr = dlsym(allLibs[i].libAddr, allLibs[i].functions[k].funcName);
-				}//END function for loop
 
-				//successfully grabbed lib and functions
-				return;
+					if(allLibs[i].functions[k].funcAddr != NULL)
+					{
+						cout<<"Found method "<<allLibs[i].functions[k].funcName<<endl;
+					}
+					else
+					{
+						cout<<"Didn't find method "<<allLibs[i].functions[k].funcName<<endl;
+					}
+				}//END function for loop
 			}//end if lib loaded successfully
 		}//END inner for
 	}//END outer for
