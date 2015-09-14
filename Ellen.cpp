@@ -445,106 +445,15 @@ void produceControllerInfo(struct cylonStruct& et)
 				cout<<"GameControllerOpen successful!"<<endl;
 				//TODO: change this to dynamic
 				controllerStruct controller;
-/*
+
 				//set fields to basic defaults
 				//credit to davidgow.net for partial input code
-				int dpadUp	= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_DPAD_UP);
-				bool dpadDown			= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_DPAD_DOWN);
-				bool dpadLeft			= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_DPAD_LEFT);
-				bool dpadRight			= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
-				bool startButton		= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_START);
-				bool selectButton		= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_BACK);
-				bool leftBumper			= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
-				bool rightBumper		= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
-				bool aButton			= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_A);
-				bool bButton			= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_B);
-				bool xButton			= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_X);
-				bool yButton			= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_Y);
-				bool leftThumbButton    = SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_LEFTSTICK);
-				bool rightThumbButton   = SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_RIGHTSTICK);
-
 				int16_t leftThumbX 		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_LEFTX);
 				int16_t leftThumbY		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_LEFTY);
 				int16_t leftTrigger 	= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
 				int16_t rightThumbX		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_RIGHTX);
 				int16_t rightThumbY		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_RIGHTY);
 				int16_t rightTrigger 	= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
-
-				//bit wise operations for building buttons bit mask
-				controller.buttons = 0x0000;
-				if (SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_LEFTSHOULDER)== 1)
-				{
-					controller.buttons = controller.buttons + 0x0001;
-					cout<<"X BUTTON"<<endl;
-				}
-				if (dpadDown)
-				{
-					controller.buttons = controller.buttons + 0x0002;
-					cout<<"X BUTTON"<<endl;
-				}
-				if (dpadLeft)
-				{
-					controller.buttons = controller.buttons + 0x0004;
-					cout<<"X BUTTON"<<endl;
-				}
-				if (dpadRight)
-				{
-					cout<<"X BUTTON"<<endl;
-					controller.buttons = controller.buttons + 0x0008;
-				}
-				if (startButton)
-				{
-					controller.buttons = controller.buttons + 0x0010;
-					cout<<"X BUTTON"<<endl;
-				}
-				if (selectButton)
-				{
-					controller.buttons = controller.buttons + 0x0020;
-					cout<<"X BUTTON"<<endl;
-				}
-				if (leftThumbButton)
-				{
-					controller.buttons = controller.buttons + 0x0040;
-					cout<<"X BUTTON"<<endl;
-				}
-				if (rightThumbButton)
-				{
-					controller.buttons = controller.buttons + 0x0080;
-					cout<<"X BUTTON"<<endl;
-				}
-				if (leftBumper)
-				{
-					controller.buttons = controller.buttons + 0x0100;
-					cout<<"X BUTTON"<<endl;
-				}
-				if (rightBumper)
-				{
-					controller.buttons = controller.buttons + 0x0200;
-					cout<<"X BUTTON"<<endl;
-				}
-				if (aButton)
-				{
-					controller.buttons = controller.buttons + 0x1000;
-					cout<<"X BUTTON"<<endl;
-				}
-				if (bButton)
-				{
-					controller.buttons = controller.buttons + 0x2000;
-					cout<<"X BUTTON"<<endl;
-				}
-				if (xButton)
-				{
-					controller.buttons = controller.buttons + 0x4000;
-					cout<<"X BUTTON"<<endl;
-				}
-				if (yButton)
-				{
-					controller.buttons = controller.buttons + 0x8000;
-					cout<<"X BUTTON"<<endl;
-				}
-				//LOG TODO: remove this
-				cout<<"Buttons "<<controller.buttons<<endl;
-*/
 
 				//build structs
 				struct deviceStruct 	device		= buildControllerDevice(i, SDL_JoystickName(joy));
@@ -1175,8 +1084,24 @@ void pollControllerEvents(struct cylonStruct& et)
 		{
 			if(event.cbutton.state == SDL_PRESSED)
 			{
+				//TODO: remove LOG
 				cout<<"Presserino"<<endl;
-			}
+
+				//iterate over controllers to find which one we're going to use
+				for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
+				{
+					if(event.cbutton.which == (int)iterator->userIndex)
+					{
+						//TODO: remove LOG
+						cout<<"Buttons before: "<<hex<<iterator->buttons<<dec<<endl;
+
+						iterator->buttons = pollButtons(iterator->buttons, event);
+
+						//TODO: remove LOG
+						cout<<"Buttons after: "<<hex<<iterator->buttons<<dec<<endl;
+					}//END if id's match
+				}//END for
+			}//END If Pressed
 		}
 
 		else if(event.type == SDL_CONTROLLERBUTTONUP)
@@ -1206,6 +1131,72 @@ void pollControllerEvents(struct cylonStruct& et)
 	}//END WHILE SDL_PollEvent
 }//END Poller
 
+//set a buttons field for a given event
+uint16_t pollButtons(uint16_t buttons, SDL_Event event)
+{
+	if(event.cbutton.button == SDL_CONTROLLER_BUTTON_A)
+	{
+		buttons |= 0x1000;
+	}
+	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_B)
+	{
+		buttons |= 0x2000;
+	}
+	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_X)
+	{
+		buttons |= 0x4000;
+	}
+	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_Y)
+	{
+		buttons |= 0x8000;
+	}
+	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_UP)
+	{
+		buttons |= 0x0001;
+	}
+	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_DOWN)
+	{
+		buttons |= 0x0002;
+	}
+	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT)
+	{
+		buttons |= 0x0004;
+	}
+	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
+	{
+		buttons |= 0x0008;
+	}
+	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_START)
+	{
+		buttons |= 0x0010;
+	}
+	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_BACK)
+	{
+		buttons |= 0x0020;
+	}
+	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_LEFTSTICK)
+	{
+		buttons |= 0x0040;
+	}
+	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_RIGHTSTICK)
+	{
+		buttons |= 0x0080;
+	}
+	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_LEFTSHOULDER)
+	{
+		buttons |= 0x0100;
+	}
+	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)
+	{
+		buttons |= 0x0200;
+	}
+	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_GUIDE)
+	{
+		buttons |= 0x0400;
+	}//END IF
+
+	return buttons;
+}//END poll buttons
 
 //END Pollers
 
