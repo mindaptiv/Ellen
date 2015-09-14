@@ -1095,7 +1095,7 @@ void pollControllerEvents(struct cylonStruct& et)
 						//TODO: remove LOG
 						cout<<"Buttons before: "<<hex<<iterator->buttons<<dec<<endl;
 
-						iterator->buttons = pollButtons(iterator->buttons, event);
+						iterator->buttons = pollButtons(iterator->buttons, event, true);
 
 						//TODO: remove LOG
 						cout<<"Buttons after: "<<hex<<iterator->buttons<<dec<<endl;
@@ -1109,8 +1109,23 @@ void pollControllerEvents(struct cylonStruct& et)
 			if(event.cbutton.state == SDL_RELEASED )
 			{
 				cout<<"Releasssssed"<<endl;
-			}
-		}
+
+				//iterate over controllers to find which one we're going to use
+				for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
+				{
+					if(event.cbutton.which == (int)iterator->userIndex)
+					{
+						//TODO: remove LOG
+						cout<<"Buttons before: "<<hex<<iterator->buttons<<dec<<endl;
+
+						iterator->buttons = pollButtons(iterator->buttons, event, false);
+
+						//TODO: remove LOG
+						cout<<"Buttons after: "<<hex<<iterator->buttons<<dec<<endl;
+					}//END if id's match
+				}//END for
+			}//END if released
+		}//END outer if
 
 		else if(event.type == SDL_JOYBUTTONDOWN)
 		{
@@ -1132,67 +1147,210 @@ void pollControllerEvents(struct cylonStruct& et)
 }//END Poller
 
 //set a buttons field for a given event
-uint16_t pollButtons(uint16_t buttons, SDL_Event event)
+//controller.buttons mapping
+/*
+ * 1st Byte: (Right)(Left)(Down)(Up)
+ * 2nd Byte: (Right Thumbstick)(Left Thumbstick)(Back)(Start)
+ * 3rd Byte: (Don't Care)(Home)(Right Bumper)(Left Bumper)
+ * 4th Byte: (Y)(X)(B)(A)
+ */
+uint16_t pollButtons(uint16_t buttons, SDL_Event event, bool pressed)
 {
 	if(event.cbutton.button == SDL_CONTROLLER_BUTTON_A)
 	{
-		buttons |= 0x1000;
+		//if(event.cbutton.state == SDL_PRESSED)
+		if(pressed)
+		{
+			buttons |= 0x1000;
+		}
+		//else if(event.cbutton.state == SDL_RELEASED && (buttons & A_BUTTON == A_BUTTON))
+		else if(!pressed && ((buttons & A_BUTTON) == A_BUTTON))
+		{
+			buttons -= 0x1000;
+		}
 	}
 	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_B)
 	{
-		buttons |= 0x2000;
+		//if(event.cbutton.state == SDL_PRESSED)
+		if(pressed)
+		{
+			buttons |= 0x2000;
+		}
+		else if(!pressed && ((buttons & B_BUTTON) == B_BUTTON))
+		//else if(event.cbutton.state == SDL_RELEASED && (buttons & B_BUTTON == B_BUTTON))
+		{
+			buttons -= 0x2000;
+		}
 	}
 	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_X)
 	{
-		buttons |= 0x4000;
+		//if(event.cbutton.state == SDL_PRESSED)
+		if(pressed)
+		{
+			buttons |= X_BUTTON;
+		}
+		//else if(event.cbutton.state == SDL_RELEASED && (buttons & X_BUTTON == X_BUTTON))
+		else if(!pressed && ((buttons & X_BUTTON) == X_BUTTON))
+		{
+			buttons -= X_BUTTON;
+		}
 	}
 	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_Y)
 	{
-		buttons |= 0x8000;
+		//if(event.cbutton.state == SDL_PRESSED)
+		if(pressed)
+		{
+			buttons |= Y_BUTTON;
+		}
+		//else if(event.cbutton.state == SDL_RELEASED && (buttons & Y_BUTTON == Y_BUTTON))
+		else if(!pressed && ((buttons & Y_BUTTON) == Y_BUTTON))
+		{
+			buttons -= Y_BUTTON;
+		}
 	}
 	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_UP)
 	{
-		buttons |= 0x0001;
+		//if(event.cbutton.state == SDL_PRESSED)
+		if(pressed)
+		{
+			buttons |= UP_DPAD;
+		}
+		//else if(event.cbutton.state == SDL_RELEASED && (buttons & UP_DPAD == UP_DPAD))
+		else if(!pressed && ((buttons & UP_DPAD) == UP_DPAD))
+		{
+			buttons -= UP_DPAD;
+		}
 	}
 	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_DOWN)
 	{
-		buttons |= 0x0002;
+		//if(event.cbutton.state == SDL_PRESSED)
+		if(pressed)
+		{
+			buttons |= DOWN_DPAD;
+		}
+		//else if(event.cbutton.state == SDL_RELEASED && (buttons & DOWN_DPAD == DOWN_DPAD))
+		else if(!pressed && ((buttons & DOWN_DPAD) == DOWN_DPAD))
+		{
+			buttons -= DOWN_DPAD;
+		}
 	}
 	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT)
 	{
-		buttons |= 0x0004;
+		//if(event.cbutton.state == SDL_PRESSED)
+		if(pressed)
+		{
+			buttons |= LEFT_DPAD;
+		}
+		//else if(event.cbutton.state == SDL_RELEASED && (buttons & LEFT_DPAD == LEFT_DPAD))
+		else if(!pressed && ((buttons & LEFT_DPAD) == LEFT_DPAD))
+		{
+			buttons -= LEFT_DPAD;
+		}
 	}
 	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
 	{
-		buttons |= 0x0008;
+		//if(event.cbutton.state == SDL_PRESSED)
+		if(pressed)
+		{
+			buttons |= RIGHT_DPAD;
+		}
+		//else if(event.cbutton.state == SDL_RELEASED && (buttons & RIGHT_DPAD == RIGHT_DPAD))
+		else if(!pressed && ((buttons & RIGHT_DPAD) == RIGHT_DPAD))
+		{
+			buttons -= RIGHT_DPAD;
+		}
 	}
 	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_START)
 	{
-		buttons |= 0x0010;
+		//if(event.cbutton.state == SDL_PRESSED)
+		if(pressed)
+		{
+			buttons |= START_BUTTON;
+		}
+		//else if(event.cbutton.state == SDL_RELEASED && (buttons & START_BUTTON == START_BUTTON))
+		else if(!pressed && ((buttons & START_BUTTON) == START_BUTTON))
+		{
+			buttons -= START_BUTTON;
+		}
 	}
 	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_BACK)
 	{
-		buttons |= 0x0020;
+		//if(event.cbutton.state == SDL_PRESSED)
+		if(pressed)
+		{
+			buttons |= SELECT_BUTTON;
+		}
+		//else if(event.cbutton.state == SDL_RELEASED && (buttons & SELECT_BUTTON == SELECT_BUTTON))
+		else if(!pressed && ((buttons & SELECT_BUTTON) == SELECT_BUTTON))
+		{
+			buttons -= SELECT_BUTTON;
+		}
 	}
 	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_LEFTSTICK)
 	{
-		buttons |= 0x0040;
+		//if(event.cbutton.state == SDL_PRESSED)
+		if(pressed)
+		{
+			buttons |= LEFT_THUMB;
+		}
+		//else if(event.cbutton.state == SDL_RELEASED && (buttons & LEFT_THUMB == LEFT_THUMB))
+		else if(!pressed && ((buttons & LEFT_THUMB) == LEFT_THUMB))
+		{
+			buttons -= LEFT_THUMB;
+		}
 	}
 	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_RIGHTSTICK)
 	{
-		buttons |= 0x0080;
+		//if(event.cbutton.state == SDL_PRESSED)
+		if(pressed)
+		{
+			buttons |= RIGHT_THUMB;
+		}
+		//else if(event.cbutton.state == SDL_RELEASED && (buttons & RIGHT_THUMB == RIGHT_THUMB))
+		else if(!pressed && ((buttons & RIGHT_THUMB) == RIGHT_THUMB))
+		{
+			buttons -= RIGHT_THUMB;
+		}
 	}
 	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_LEFTSHOULDER)
 	{
-		buttons |= 0x0100;
+		if(pressed)
+		//if(event.cbutton.state == SDL_PRESSED)
+		{
+			buttons |= LEFT_SHOULDER;
+		}
+		//else if(event.cbutton.state == SDL_RELEASED && (buttons & LEFT_SHOULDER == LEFT_SHOULDER))
+		else if(!pressed && ((buttons & LEFT_SHOULDER) == LEFT_SHOULDER))
+		{
+			buttons -= LEFT_SHOULDER;
+		}
 	}
 	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)
 	{
-		buttons |= 0x0200;
+		//if(event.cbutton.state == SDL_PRESSED)
+		if(pressed)
+		{
+			buttons |= RIGHT_SHOULDER;
+		}
+		//else if(event.cbutton.state == SDL_RELEASED && (buttons & RIGHT_SHOULDER == RIGHT_SHOULDER))
+		else if(!pressed && ((buttons & RIGHT_SHOULDER) == RIGHT_SHOULDER))
+		{
+			buttons -= RIGHT_SHOULDER;
+		}
 	}
 	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_GUIDE)
 	{
-		buttons |= 0x0400;
+		//if(event.cbutton.state == SDL_PRESSED)
+		if(pressed)
+		{
+			//TODO: add to cylon.h
+			buttons |= 0x0400;
+		}
+		//else if(event.cbutton.state == SDL_RELEASED && (buttons & 0x0400 == 0x0400))
+		else if(!pressed && ((buttons & 0x0400) == 0x0400))
+		{
+			buttons -= 0x0400;
+		}
 	}//END IF
 
 	return buttons;

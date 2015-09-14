@@ -152,6 +152,6 @@ struct controllerStruct buildController(SDL_GameController* sdlPad, deviceStruct
 
 //Pollers
 void pollControllerEvents(struct cylonStruct& et);
-uint16_t pollButtons(uint16_t buttons, SDL_Event event);
+uint16_t pollButtons(uint16_t buttons, SDL_Event event, bool pressed);
 
 #endif /* ELLEN_H_ */
