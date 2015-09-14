@@ -396,24 +396,170 @@ void produceDeviceInfo(struct cylonStruct& et)
 
 void produceControllerInfo(struct cylonStruct& et)
 {
+	//int result = SDL_Init(SDL_INIT_GAMECONTROLLER | SDL_INIT_JOYSTICK);
+	/*if (result < 0)
+	{
+
+		cout<<"I told them it means peace among worlds!"<<endl;
+		return;
+	}
+*/
+	//add mappings
+	SDL_GameControllerAddMappingsFromFile("./src/Ellen/SDL_GameControllerDB/gamecontrollerdb.txt");
+
 	//Cast functions
 	SDL_NumJoysticks_t 		_SDL_NumJoysticks 		= (SDL_NumJoysticks_t) allLibs[libsdl].functions[SDL_NumJoysticks_e].funcAddr;
 	SDL_IsGameController_t	_SDL_IsGameController 	= (SDL_IsGameController_t) allLibs[libsdl].functions[SDL_IsGameController_e].funcAddr;
 
 	//grab gamepad count
+	//int gamepadCount = _SDL_NumJoysticks();
 	int gamepadCount = _SDL_NumJoysticks();
-
 	cout<<"Gamepads: "<<gamepadCount<<endl;
 
 	//Credit to SDL Wiki for partial method code
 	for (int i = 0; i < gamepadCount; i++)
 	{
-		if (_SDL_IsGameController(i) )
+		SDL_Joystick* joy;
+		joy = SDL_JoystickOpen(i);
+
+
+
+		if(_SDL_IsGameController(i))
 		{
-			cout<<"Joystick "<<i<<" is supported by the game controller interface!"<<endl;
-		}
-	}
-}
+			cout<<"Joysticks "<<i<<" is supported by the game controller interface!"<<endl;
+
+			SDL_GameController* sdlPad = SDL_GameControllerOpen(i);
+
+			//Make sure controller open worked
+			if(!sdlPad)
+			{
+				//Use Joystick class
+				struct deviceStruct 	device		= buildControllerDevice(i, SDL_JoystickName(joy));
+				//TODO: build this controllerStruct
+				//struct controllerStruct controller 	= buildController(device, sdlController);
+			}
+			else
+			{
+				//Use GameController Class
+				//Build Controller
+				cout<<"GameControllerOpen successful!"<<endl;
+				//TODO: change this to dynamic
+				controllerStruct controller;
+/*
+				//set fields to basic defaults
+				//credit to davidgow.net for partial input code
+				int dpadUp	= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_DPAD_UP);
+				bool dpadDown			= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_DPAD_DOWN);
+				bool dpadLeft			= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_DPAD_LEFT);
+				bool dpadRight			= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
+				bool startButton		= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_START);
+				bool selectButton		= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_BACK);
+				bool leftBumper			= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
+				bool rightBumper		= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+				bool aButton			= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_A);
+				bool bButton			= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_B);
+				bool xButton			= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_X);
+				bool yButton			= SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_Y);
+				bool leftThumbButton    = SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_LEFTSTICK);
+				bool rightThumbButton   = SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_RIGHTSTICK);
+
+				int16_t leftThumbX 		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_LEFTX);
+				int16_t leftThumbY		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_LEFTY);
+				int16_t leftTrigger 	= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
+				int16_t rightThumbX		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_RIGHTX);
+				int16_t rightThumbY		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_RIGHTY);
+				int16_t rightTrigger 	= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
+
+				//bit wise operations for building buttons bit mask
+				controller.buttons = 0x0000;
+				if (SDL_GameControllerGetButton(sdlPad, SDL_CONTROLLER_BUTTON_LEFTSHOULDER)== 1)
+				{
+					controller.buttons = controller.buttons + 0x0001;
+					cout<<"X BUTTON"<<endl;
+				}
+				if (dpadDown)
+				{
+					controller.buttons = controller.buttons + 0x0002;
+					cout<<"X BUTTON"<<endl;
+				}
+				if (dpadLeft)
+				{
+					controller.buttons = controller.buttons + 0x0004;
+					cout<<"X BUTTON"<<endl;
+				}
+				if (dpadRight)
+				{
+					cout<<"X BUTTON"<<endl;
+					controller.buttons = controller.buttons + 0x0008;
+				}
+				if (startButton)
+				{
+					controller.buttons = controller.buttons + 0x0010;
+					cout<<"X BUTTON"<<endl;
+				}
+				if (selectButton)
+				{
+					controller.buttons = controller.buttons + 0x0020;
+					cout<<"X BUTTON"<<endl;
+				}
+				if (leftThumbButton)
+				{
+					controller.buttons = controller.buttons + 0x0040;
+					cout<<"X BUTTON"<<endl;
+				}
+				if (rightThumbButton)
+				{
+					controller.buttons = controller.buttons + 0x0080;
+					cout<<"X BUTTON"<<endl;
+				}
+				if (leftBumper)
+				{
+					controller.buttons = controller.buttons + 0x0100;
+					cout<<"X BUTTON"<<endl;
+				}
+				if (rightBumper)
+				{
+					controller.buttons = controller.buttons + 0x0200;
+					cout<<"X BUTTON"<<endl;
+				}
+				if (aButton)
+				{
+					controller.buttons = controller.buttons + 0x1000;
+					cout<<"X BUTTON"<<endl;
+				}
+				if (bButton)
+				{
+					controller.buttons = controller.buttons + 0x2000;
+					cout<<"X BUTTON"<<endl;
+				}
+				if (xButton)
+				{
+					controller.buttons = controller.buttons + 0x4000;
+					cout<<"X BUTTON"<<endl;
+				}
+				if (yButton)
+				{
+					controller.buttons = controller.buttons + 0x8000;
+					cout<<"X BUTTON"<<endl;
+				}
+				//LOG TODO: remove this
+				cout<<"Buttons "<<controller.buttons<<endl;
+*/
+
+				//build structs
+				struct deviceStruct 	device		= buildControllerDevice(i, SDL_JoystickName(joy));
+				struct controllerStruct controllerTwo 	= buildController(sdlPad, device, i);
+
+				//add to lists for ellen
+				et.controllers.push_back(controllerTwo);
+				device.controllerIndex = et.controllers.size() - 1;
+				et.detectedDevices.push_back(device);
+			}//END if sdlController successfully opened
+		}//END if sdl is controller*/
+	}//END for
+
+
+}//END Method
 
 void produceUsbDeviceInfo(struct cylonStruct& et)
 {
@@ -621,6 +767,23 @@ void produceLog(struct cylonStruct& et)
 		cout<<"\t"<<"Display Index: "<<iterator->displayIndex<<endl;
 		cout<<"\t"<<"Storage Index: "<<iterator->storageIndex<<endl<<endl;
 	}
+
+	cout<<"Controllers: "<<endl;
+
+	int controllerCount = 0;
+	for(list<controllerStruct>::const_iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
+	{
+		cout<<"\t"<<"Controller #: "<<controllerCount<<endl;
+		cout<<"\t"<<"Buttons Mask: "<<hex<<iterator->buttons<<dec<<endl;
+		cout<<"\t"<<"Left Trigger: "<<iterator->leftTrigger<<endl;
+		cout<<"\t"<<"Right Trigger: "<<iterator->rightTrigger<<endl;
+		cout<<"\t"<<"Left X: "<<iterator->thumbLeftX<<endl;
+		cout<<"\t"<<"Left Y: "<<iterator->thumbLeftY<<endl;
+		cout<<"\t"<<"Right X: "<<iterator->thumbRightX<<endl;
+		cout<<"\t"<<"Right Y: "<<iterator->thumbRightY<<endl<<endl;
+		controllerCount++;
+	}
+	cout<<"Log done"<<endl;
 }//END produceLog
 //END PRODUCERS
 
@@ -646,7 +809,7 @@ struct cylonStruct buildEllen()
 	produceLog(ellen);
 
 	//close libs
-	closeLibs();
+	//closeLibs();
 
 	//return
 	return ellen;
@@ -913,4 +1076,137 @@ struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_d
 	//Return
 	return device;
 }
+
+struct deviceStruct buildControllerDevice(int index, const char* deviceName)
+{
+	//Variable Declaration
+	struct deviceStruct device;
+
+	//set defaults
+	device.panelLocation 	= ERROR_INT;
+	device.inLid			= ERROR_INT;
+	device.inDock			= ERROR_INT;
+	device.isEnabled		= 1;
+	device.orientation		= NO_ROTATION;
+	device.vendorID			= ERROR_INT;
+	device.displayIndex		= ERROR_INT;
+	device.controllerIndex	= ERROR_INT; //value to be set later
+	device.storageIndex 	= ERROR_INT;
+	device.sensorsIndex		= ERROR_INT;
+
+	//set device type
+	device.deviceType 		= CONTROLLER_TYPE;
+
+	//grab if default if it is the 0 indexed player
+	if(index == 0)
+	{
+		device.isDefault = 1;
+	}
+	else
+	{
+		device.isDefault = ERROR_INT;
+	}
+
+	//grab names
+	device.name 		= deviceName;
+	device.id			= "" + index;
+
+	//Return
+	return device;
+}
+
+
+struct controllerStruct buildBlankController()
+{
+	//Variable Declaration
+	struct controllerStruct controller;
+
+	//Set fields to basic defaults
+	controller.userIndex   = -1; //some schemes have 0-3, 1-4, start with negative number to be safe just in case
+	controller.packetNumber = ERROR_INT;
+	controller.buttons      = ERROR_INT;
+	controller.leftTrigger  = ERROR_INT;
+	controller.rightTrigger = ERROR_INT;
+	controller.thumbLeftX   = ERROR_INT;
+	controller.thumbLeftY	= ERROR_INT;
+	controller.thumbRightX  = ERROR_INT;
+	controller.thumbRightY 	= ERROR_INT;
+
+	//Return
+	return controller;
+}
+
+
+struct controllerStruct buildController(SDL_GameController* sdlPad, deviceStruct device, int index)
+{
+	cout<<"In build controller"<<endl;
+
+	//Variable Declaration
+	struct controllerStruct controller;
+
+	//Set parent deviceStruct
+	controller.superDevice = device;
+
+	//set user index
+	controller.userIndex = index;
+
+	//set fields that may change later
+	controller.buttons = 0;
+
+	//Set fields to basic defaults
+	controller.packetNumber = ERROR_INT;
+
+	//Return
+	return controller;
+}
 //END builders
+
+//Pollers
+//parse gamecontroller and joystick events via event handling
+void pollControllerEvents(struct cylonStruct& et)
+{
+	//Variable Declaration
+	SDL_Event event;
+
+	//while there are events to be handled
+	while(SDL_PollEvent(&event))
+	{
+		if(event.type == SDL_CONTROLLERBUTTONDOWN)
+		{
+			if(event.cbutton.state == SDL_PRESSED)
+			{
+				cout<<"Presserino"<<endl;
+			}
+		}
+
+		else if(event.type == SDL_CONTROLLERBUTTONUP)
+		{
+			if(event.cbutton.state == SDL_RELEASED )
+			{
+				cout<<"Releasssssed"<<endl;
+			}
+		}
+
+		else if(event.type == SDL_JOYBUTTONDOWN)
+		{
+			if(event.jbutton.state == SDL_PRESSED)
+			{
+				cout<<"Jpressed"<<endl;
+			}
+		}
+
+		else if(event.type == SDL_JOYBUTTONUP)
+		{
+			if(event.jbutton.state == SDL_RELEASED)
+			{
+				cout<<"Jreleased"<<endl;
+			}
+		}
+
+	}//END WHILE SDL_PollEvent
+}//END Poller
+
+
+//END Pollers
+
+
