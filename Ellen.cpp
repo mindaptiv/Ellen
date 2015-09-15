@@ -412,65 +412,71 @@ void produceControllerInfo(struct cylonStruct& et)
 	SDL_IsGameController_t	_SDL_IsGameController 	= (SDL_IsGameController_t) allLibs[libsdl].functions[SDL_IsGameController_e].funcAddr;
 
 	//grab gamepad count
-	//int gamepadCount = _SDL_NumJoysticks();
 	int gamepadCount = _SDL_NumJoysticks();
-	cout<<"Gamepads: "<<gamepadCount<<endl;
 
 	//Credit to SDL Wiki for partial method code
 	for (int i = 0; i < gamepadCount; i++)
 	{
 		SDL_Joystick* joy;
 		joy = SDL_JoystickOpen(i);
+		if(!joy)
+		{
+			//Retrieval failed, go on to next device
+			continue;
+		}
 
-
-
+		//Use SDL_GameController Class
 		if(_SDL_IsGameController(i))
 		{
-			cout<<"Joysticks "<<i<<" is supported by the game controller interface!"<<endl;
-
+			//Open controller via index
 			SDL_GameController* sdlPad = SDL_GameControllerOpen(i);
 
 			//Make sure controller open worked
 			if(!sdlPad)
 			{
-				//Use Joystick class
-				struct deviceStruct 	device		= buildControllerDevice(i, SDL_JoystickName(joy));
-				//TODO: build this controllerStruct
-				//struct controllerStruct controller 	= buildController(device, sdlController);
+				//Retrieval failed, go on to next device
+				continue;
 			}
 			else
 			{
-				//Use GameController Class
-				//Build Controller
-				cout<<"GameControllerOpen successful!"<<endl;
-				//TODO: change this to dynamic
-				controllerStruct controller;
-
-				//set fields to basic defaults
-				//credit to davidgow.net for partial input code
-				int16_t leftThumbX 		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_LEFTX);
-				int16_t leftThumbY		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_LEFTY);
-				int16_t leftTrigger 	= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
-				int16_t rightThumbX		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_RIGHTX);
-				int16_t rightThumbY		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_RIGHTY);
-				int16_t rightTrigger 	= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
-
 				//build structs
-				struct deviceStruct 	device		= buildControllerDevice(i, SDL_JoystickName(joy));
-				struct controllerStruct controllerTwo 	= buildController(sdlPad, device, i);
+				deviceStruct 	device			= buildControllerDevice(i, SDL_GameControllerName(sdlPad));
+				controllerStruct controller 		= buildController(sdlPad, device, i);
+
+				//TODO: normalize these values to correct range for Centurion
+				//credit to davidgow.net for partial input code
+				controller.thumbLeftX 		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_LEFTX);
+				controller.thumbLeftY		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_LEFTY);
+				controller.leftTrigger		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
+				controller.thumbRightX		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_RIGHTX);
+				controller.thumbRightY		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_RIGHTY);
+				controller.rightTrigger 	= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
 
 				//add to lists for ellen
-				et.controllers.push_back(controllerTwo);
+				et.controllers.push_back(controller);
 				device.controllerIndex = et.controllers.size() - 1;
 				et.detectedDevices.push_back(device);
 			}//END if sdlController successfully opened
-		}//END if sdl is controller*/
+		}//END if sdl is controller
+
+		//use SDL_Joystick class
+		else
+		{
+			//Use Joystick class to build device and controller structs
+			deviceStruct		device 		= buildControllerDevice(i, SDL_JoystickName(joy));
+			controllerStruct 	controller	= buildController(joy, device, i);
+
+			//add to lists for ellen
+			et.controllers.push_back(controller);
+			device.controllerIndex = et.controllers.size() - 1;
+			et.detectedDevices.push_back(device);
+		}
 	}//END for
 
 
 }//END Method
 
-void produceUsbDeviceInfo(struct cylonStruct& et)
+void produceUsbDeviceInfo(cylonStruct& et)
 {
 	if (!allLibs[libusb].opened)
 	{
@@ -1045,11 +1051,9 @@ struct controllerStruct buildBlankController()
 	return controller;
 }
 
-
+//Build a controllerStruct using an SDL_GameController pointer
 struct controllerStruct buildController(SDL_GameController* sdlPad, deviceStruct device, int index)
 {
-	cout<<"In build controller"<<endl;
-
 	//Variable Declaration
 	struct controllerStruct controller;
 
@@ -1067,7 +1071,30 @@ struct controllerStruct buildController(SDL_GameController* sdlPad, deviceStruct
 
 	//Return
 	return controller;
+}//END builder
+
+//Build a controllerStruct using an SDL_Joystick pointer
+struct controllerStruct buildController(SDL_Joystick* joystick, deviceStruct device, int index)
+{
+	//Variable Declaration
+	struct controllerStruct controller;
+
+	//Set parent
+	controller.superDevice = device;
+
+	//set user index
+	controller.userIndex = index;
+
+	//set fields that may change later
+	controller.buttons = 0;
+
+	//set fields to basic defaults
+	controller.packetNumber = ERROR_INT;
+
+	//Return
+	return controller;
 }
+
 //END builders
 
 //Pollers
@@ -1084,44 +1111,27 @@ void pollControllerEvents(struct cylonStruct& et)
 		{
 			if(event.cbutton.state == SDL_PRESSED)
 			{
-				//TODO: remove LOG
-				cout<<"Presserino"<<endl;
-
 				//iterate over controllers to find which one we're going to use
 				for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 				{
 					if(event.cbutton.which == (int)iterator->userIndex)
 					{
-						//TODO: remove LOG
-						cout<<"Buttons before: "<<hex<<iterator->buttons<<dec<<endl;
-
 						iterator->buttons = pollButtons(iterator->buttons, event, true);
-
-						//TODO: remove LOG
-						cout<<"Buttons after: "<<hex<<iterator->buttons<<dec<<endl;
 					}//END if id's match
 				}//END for
 			}//END If Pressed
-		}
+		}//END outer if
 
 		else if(event.type == SDL_CONTROLLERBUTTONUP)
 		{
 			if(event.cbutton.state == SDL_RELEASED )
 			{
-				cout<<"Releasssssed"<<endl;
-
 				//iterate over controllers to find which one we're going to use
 				for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 				{
 					if(event.cbutton.which == (int)iterator->userIndex)
 					{
-						//TODO: remove LOG
-						cout<<"Buttons before: "<<hex<<iterator->buttons<<dec<<endl;
-
-						iterator->buttons = pollButtons(iterator->buttons, event, false);
-
-						//TODO: remove LOG
-						cout<<"Buttons after: "<<hex<<iterator->buttons<<dec<<endl;
+						iterator->buttons = pollButtons(iterator->buttons, event, true);
 					}//END if id's match
 				}//END for
 			}//END if released
@@ -1131,17 +1141,31 @@ void pollControllerEvents(struct cylonStruct& et)
 		{
 			if(event.jbutton.state == SDL_PRESSED)
 			{
-				cout<<"Jpressed"<<endl;
-			}
-		}
+				//iterate over joysticks to find which one we're going to use
+				for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
+				{
+					if((event.jbutton.which == (int)iterator->userIndex) && !SDL_IsGameController(event.jbutton.which))
+					{
+						iterator->buttons = pollButtons(iterator->buttons, event, false);
+					}//END if ID's match & is NOT a GameController
+				}//END for
+			}//END if pressed
+		}//END outer if
 
 		else if(event.type == SDL_JOYBUTTONUP)
 		{
 			if(event.jbutton.state == SDL_RELEASED)
 			{
-				cout<<"Jreleased"<<endl;
-			}
-		}
+				//iterate over joysticks to find which one we're going to use
+				for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
+				{
+					if((event.jbutton.which == (int)iterator->userIndex) && !SDL_IsGameController(event.jbutton.which))
+					{
+						iterator->buttons = pollButtons(iterator->buttons, event, false);
+					}//END if ID's match & is NOT a GameController
+				}//END for
+			}//END if released
+		}//END outer if
 
 	}//END WHILE SDL_PollEvent
 }//END Poller
@@ -1154,33 +1178,54 @@ void pollControllerEvents(struct cylonStruct& et)
  * 3rd Byte: (Don't Care)(Home)(Right Bumper)(Left Bumper)
  * 4th Byte: (Y)(X)(B)(A)
  */
-uint16_t pollButtons(uint16_t buttons, SDL_Event event, bool pressed)
+uint16_t pollButtons(uint16_t buttons, SDL_Event event, bool isGameController)
 {
-	if(event.cbutton.button == SDL_CONTROLLER_BUTTON_A)
+	//TODO: remove LOG
+	cout<<"buttons before: "<<hex<<buttons<<dec<<endl;
+
+	//Variable Declaration
+	int button;
+	Uint8 state;
+
+	//If isGameController flag is set, we need to use the cbutton member variable of the event
+	//If the flag is false, we need to use the jbutton member variable of the event
+	if(isGameController)
 	{
-		if(event.cbutton.state == SDL_PRESSED)
+		button 	= event.cbutton.button;
+		state	= event.cbutton.state;
+	}
+	else if (!isGameController)
+	{
+		button 	= event.jbutton.button;
+		state	= event.jbutton.state;
+	}
+
+
+	if(button == SDL_CONTROLLER_BUTTON_A)
+	{
+		if(state == SDL_PRESSED)
 		{
 			buttons |= A_BUTTON;
 		}
-		else if(event.cbutton.state == SDL_RELEASED && ((buttons & A_BUTTON) == A_BUTTON))
+		else if(state == SDL_RELEASED && ((buttons & A_BUTTON) == A_BUTTON))
 		{
 			buttons -= A_BUTTON;
 		}
 	}
-	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_B)
+	else if(button == SDL_CONTROLLER_BUTTON_B)
 	{
-		if(event.cbutton.state == SDL_PRESSED)
+		if(state == SDL_PRESSED)
 		{
 			buttons |= B_BUTTON;
 		}
-		else if(event.cbutton.state == SDL_RELEASED && ((buttons & B_BUTTON) == B_BUTTON))
+		else if(state == SDL_RELEASED && ((buttons & B_BUTTON) == B_BUTTON))
 		{
 			buttons -= B_BUTTON;
 		}
 	}
-	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_X)
+	else if(button == SDL_CONTROLLER_BUTTON_X)
 	{
-		if(event.cbutton.state == SDL_PRESSED)
+		if(state == SDL_PRESSED)
 		{
 			buttons |= X_BUTTON;
 		}
@@ -1189,139 +1234,142 @@ uint16_t pollButtons(uint16_t buttons, SDL_Event event, bool pressed)
 			buttons -= X_BUTTON;
 		}
 	}
-	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_Y)
+	else if(button == SDL_CONTROLLER_BUTTON_Y)
 	{
-		if(event.cbutton.state == SDL_PRESSED)
+		if(state == SDL_PRESSED)
 		{
 			buttons |= Y_BUTTON;
 		}
-		else if(event.cbutton.state == SDL_RELEASED && ((buttons & Y_BUTTON) == Y_BUTTON))
+		else if(state == SDL_RELEASED && ((buttons & Y_BUTTON) == Y_BUTTON))
 		{
 			buttons -= Y_BUTTON;
 		}
 	}
-	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_UP)
+	else if(button == SDL_CONTROLLER_BUTTON_DPAD_UP)
 	{
-		if(event.cbutton.state == SDL_PRESSED)
+		if(state == SDL_PRESSED)
 		{
 			buttons |= UP_DPAD;
 		}
-		else if(event.cbutton.state == SDL_RELEASED && ((buttons & UP_DPAD) == UP_DPAD))
+		else if(state == SDL_RELEASED && ((buttons & UP_DPAD) == UP_DPAD))
 		{
 			buttons -= UP_DPAD;
 		}
 	}
-	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_DOWN)
+	else if(button == SDL_CONTROLLER_BUTTON_DPAD_DOWN)
 	{
-		if(event.cbutton.state == SDL_PRESSED)
+		if(state == SDL_PRESSED)
 		{
 			buttons |= DOWN_DPAD;
 		}
-		else if(event.cbutton.state == SDL_RELEASED && ((buttons & DOWN_DPAD) == DOWN_DPAD))
+		else if(state == SDL_RELEASED && ((buttons & DOWN_DPAD) == DOWN_DPAD))
 		{
 			buttons -= DOWN_DPAD;
 		}
 	}
-	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT)
+	else if(button == SDL_CONTROLLER_BUTTON_DPAD_LEFT)
 	{
-		if(event.cbutton.state == SDL_PRESSED)
+		if(state == SDL_PRESSED)
 		{
 			buttons |= LEFT_DPAD;
 		}
-		else if(event.cbutton.state == SDL_RELEASED && ((buttons & LEFT_DPAD)== LEFT_DPAD))
+		else if(state == SDL_RELEASED && ((buttons & LEFT_DPAD)== LEFT_DPAD))
 		{
 			buttons -= LEFT_DPAD;
 		}
 	}
-	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
+	else if(button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
 	{
-		if(event.cbutton.state == SDL_PRESSED)
+		if(state == SDL_PRESSED)
 		{
 			buttons |= RIGHT_DPAD;
 		}
-		else if(event.cbutton.state == SDL_RELEASED && ((buttons & RIGHT_DPAD) == RIGHT_DPAD))
+		else if(state == SDL_RELEASED && ((buttons & RIGHT_DPAD) == RIGHT_DPAD))
 		{
 			buttons -= RIGHT_DPAD;
 		}
 	}
-	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_START)
+	else if(button == SDL_CONTROLLER_BUTTON_START)
 	{
-		if(event.cbutton.state == SDL_PRESSED)
+		if(state == SDL_PRESSED)
 		{
 			buttons |= START_BUTTON;
 		}
-		else if(event.cbutton.state == SDL_RELEASED && ((buttons & START_BUTTON) == START_BUTTON))
+		else if(state == SDL_RELEASED && ((buttons & START_BUTTON) == START_BUTTON))
 		{
 			buttons -= START_BUTTON;
 		}
 	}
-	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_BACK)
+	else if(button == SDL_CONTROLLER_BUTTON_BACK)
 	{
-		if(event.cbutton.state == SDL_PRESSED)
+		if(state == SDL_PRESSED)
 		{
 			buttons |= SELECT_BUTTON;
 		}
-		else if(event.cbutton.state == SDL_RELEASED && ((buttons & SELECT_BUTTON) == SELECT_BUTTON))
+		else if(state == SDL_RELEASED && ((buttons & SELECT_BUTTON) == SELECT_BUTTON))
 		{
 			buttons -= SELECT_BUTTON;
 		}
 	}
-	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_LEFTSTICK)
+	else if(button == SDL_CONTROLLER_BUTTON_LEFTSTICK)
 	{
-		if(event.cbutton.state == SDL_PRESSED)
+		if(state == SDL_PRESSED)
 		{
 			buttons |= LEFT_THUMB;
 		}
-		else if(event.cbutton.state == SDL_RELEASED && ((buttons & LEFT_THUMB) == LEFT_THUMB))
+		else if(state == SDL_RELEASED && ((buttons & LEFT_THUMB) == LEFT_THUMB))
 		{
 			buttons -= LEFT_THUMB;
 		}
 	}
-	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_RIGHTSTICK)
+	else if(button == SDL_CONTROLLER_BUTTON_RIGHTSTICK)
 	{
-		if(event.cbutton.state == SDL_PRESSED)
+		if(state == SDL_PRESSED)
 		{
 			buttons |= RIGHT_THUMB;
 		}
-		else if(event.cbutton.state == SDL_RELEASED && ((buttons & RIGHT_THUMB) == RIGHT_THUMB))
+		else if(state == SDL_RELEASED && ((buttons & RIGHT_THUMB) == RIGHT_THUMB))
 		{
 			buttons -= RIGHT_THUMB;
 		}
 	}
-	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_LEFTSHOULDER)
+	else if(button == SDL_CONTROLLER_BUTTON_LEFTSHOULDER)
 	{
-		if(event.cbutton.state == SDL_PRESSED)
+		if(state == SDL_PRESSED)
 		{
 			buttons |= LEFT_SHOULDER;
 		}
-		else if(event.cbutton.state == SDL_RELEASED && ((buttons & LEFT_SHOULDER) == LEFT_SHOULDER))
+		else if(state == SDL_RELEASED && ((buttons & LEFT_SHOULDER) == LEFT_SHOULDER))
 		{
 			buttons -= LEFT_SHOULDER;
 		}
 	}
-	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)
+	else if(button == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)
 	{
-		if(event.cbutton.state == SDL_PRESSED)
+		if(state == SDL_PRESSED)
 		{
 			buttons |= RIGHT_SHOULDER;
 		}
-		else if(event.cbutton.state == SDL_RELEASED && ((buttons & RIGHT_SHOULDER) == RIGHT_SHOULDER))
+		else if(state == SDL_RELEASED && ((buttons & RIGHT_SHOULDER) == RIGHT_SHOULDER))
 		{
 			buttons -= RIGHT_SHOULDER;
 		}
 	}
-	else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_GUIDE)
+	else if(button == SDL_CONTROLLER_BUTTON_GUIDE)
 	{
-		if(event.cbutton.state == SDL_PRESSED)
+		if(state == SDL_PRESSED)
 		{
 			//TODO: add to cylon.h
 			buttons |= 0x0400;
 		}
-		else if(event.cbutton.state == SDL_RELEASED && ((buttons & 0x0400) == 0x0400))
+		else if(state == SDL_RELEASED && ((buttons & 0x0400) == 0x0400))
 		{
 			buttons -= 0x0400;
 		}
 	}//END IF
+
+	//TODO: remove LOG
+	cout<<"buttons after: "<<hex<<buttons<<dec<<endl;
 
 	//return new buttons mask
 	return buttons;

@@ -149,9 +149,10 @@ struct deviceStruct buildUsbDevice(struct libusb_device* device, struct libusb_d
 struct deviceStruct buildControllerDevice(int index, const char* deviceName);
 struct controllerStruct buildBlankController();
 struct controllerStruct buildController(SDL_GameController* sdlPad, deviceStruct device, int index);
+struct controllerStruct buildController(SDL_Joystick* joystick, deviceStruct device, int index);
 
 //Pollers
 void pollControllerEvents(struct cylonStruct& et);
-uint16_t pollButtons(uint16_t buttons, SDL_Event event, bool pressed);
+uint16_t pollButtons(uint16_t buttons, SDL_Event event, bool isGameController);
 
 #endif /* ELLEN_H_ */
