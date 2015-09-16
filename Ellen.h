@@ -35,6 +35,23 @@
 #include <libusb-1.0/libusb.h>	//libusb
 #include <SDL2/SDL.h>			//libsdl
 
+//controllerStruct thumbsticks
+static const float OLD_THUMB_MIN = -32768.0;
+static const float OLD_THUMB_MAX =  32767.0;
+static const float OLD_THUMB_RANGE = (OLD_THUMB_MAX - OLD_THUMB_MIN);
+static const float NEW_THUMB_MIN = -1.0;
+static const float NEW_THUMB_MAX = 	1.0;
+static const float NEW_THUMB_RANGE = (NEW_THUMB_MAX - NEW_THUMB_MIN);
+
+//controllerStruct triggers
+static const float OLD_TRIGGER_MIN = 0.0;
+static const float OLD_TRIGGER_MAX = 32767.0;
+static const float OLD_TRIGGER_RANGE = (OLD_TRIGGER_MAX - OLD_TRIGGER_MIN);
+static const float NEW_TRIGGER_MIN = 0.0;
+static const float NEW_TRIGGER_MAX = 1.0;
+static const float NEW_TRIGGER_RANGE = NEW_TRIGGER_MAX - NEW_TRIGGER_MIN;
+
+
 //credit to xc3sprog for partial dynamic libusb code ideas
 typedef int 	(*libusb_init_t)(libusb_context** context);
 typedef void 	(*libusb_exit_t)(libusb_context* context);
@@ -154,5 +171,6 @@ struct controllerStruct buildController(SDL_Joystick* joystick, deviceStruct dev
 //Pollers
 void pollControllerEvents(struct cylonStruct& et);
 uint16_t pollButtons(uint16_t buttons, SDL_Event event, bool isGameController);
+float normalizeAxis(float oldAxisValue, bool isTrigger);
 
 #endif /* ELLEN_H_ */

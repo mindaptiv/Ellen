@@ -1156,7 +1156,7 @@ void pollControllerEvents(struct cylonStruct& et)
 		{
 			if(event.jbutton.state == SDL_RELEASED)
 			{
-				//iterate over joysticks to find which one we're going to use
+				//iterate over controllers to find which one we're going to use
 				for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 				{
 					if((event.jbutton.which == (int)iterator->userIndex) && !SDL_IsGameController(event.jbutton.which))
@@ -1166,6 +1166,44 @@ void pollControllerEvents(struct cylonStruct& et)
 				}//END for
 			}//END if released
 		}//END outer if
+
+		else if(event.type == SDL_CONTROLLERAXISMOTION)
+		{
+			//iterate over controllers to find which one we're going to use
+			for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
+			{
+				if(event.caxis.which == (int)iterator->userIndex)
+				{
+					if(event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX)
+					{
+						//TODO: normalize
+						iterator->thumbLeftX = normalizeAxis(event.caxis.value, false);
+					}
+					else if(event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY)
+					{
+						iterator->thumbLeftY = normalizeAxis(event.caxis.value, false);
+					}
+					else if(event.caxis.axis == SDL_CONTROLLER_AXIS_RIGHTX)
+					{
+						iterator->thumbRightX = normalizeAxis(event.caxis.value, false);
+					}
+					else if(event.caxis.axis == SDL_CONTROLLER_AXIS_RIGHTY)
+					{
+						iterator->thumbRightY = normalizeAxis(event.caxis.value, false);
+					}
+					else if(event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT)
+					{
+						iterator->leftTrigger = normalizeAxis(event.caxis.value, true);
+					}
+					else if(event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT)
+					{
+						iterator->rightTrigger = normalizeAxis(event.caxis.value, true);
+					}//END if decide axis
+				}//END if ID's match
+			}//END iterator
+		}//END if controller axis motion
+
+
 
 	}//END WHILE SDL_PollEvent
 }//END Poller
@@ -1180,9 +1218,6 @@ void pollControllerEvents(struct cylonStruct& et)
  */
 uint16_t pollButtons(uint16_t buttons, SDL_Event event, bool isGameController)
 {
-	//TODO: remove LOG
-	cout<<"buttons before: "<<hex<<buttons<<dec<<endl;
-
 	//Variable Declaration
 	int button;
 	Uint8 state;
@@ -1368,12 +1403,32 @@ uint16_t pollButtons(uint16_t buttons, SDL_Event event, bool isGameController)
 		}
 	}//END IF
 
-	//TODO: remove LOG
-	cout<<"buttons after: "<<hex<<buttons<<dec<<endl;
-
 	//return new buttons mask
 	return buttons;
 }//END poll buttons
+
+//Normalize a polled axis
+float normalizeAxis(float oldAxisValue, bool isTrigger)
+{
+	//Variable Declaration
+	float newAxisValue;
+
+	if(isTrigger)
+	{
+		newAxisValue = (float) (( ( (oldAxisValue - OLD_TRIGGER_MIN) * NEW_TRIGGER_RANGE)/OLD_TRIGGER_RANGE) + NEW_TRIGGER_MIN);
+	}
+	else
+	{
+		newAxisValue = (float) (( ( (oldAxisValue - OLD_THUMB_MIN) * NEW_THUMB_RANGE)/OLD_THUMB_RANGE) + NEW_THUMB_MIN);
+	}
+
+	//TODO: remove log
+	cout<<"Old Axis Value: "<<oldAxisValue<<endl;
+	cout<<"New Axis Value: "<<newAxisValue<<endl;
+
+	//return
+	return newAxisValue;
+}
 
 //END Pollers
 
