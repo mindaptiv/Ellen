@@ -445,12 +445,12 @@ void produceControllerInfo(struct cylonStruct& et)
 
 				//TODO: normalize these values to correct range for Centurion
 				//credit to davidgow.net for partial input code
-				controller.thumbLeftX 		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_LEFTX);
-				controller.thumbLeftY		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_LEFTY);
-				controller.leftTrigger		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
-				controller.thumbRightX		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_RIGHTX);
-				controller.thumbRightY		= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_RIGHTY);
-				controller.rightTrigger 	= SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
+				controller.thumbLeftX 		= normalizeAxis(SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_LEFTX), false);
+				controller.thumbLeftY		= normalizeAxis(SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_LEFTY), false);
+				controller.leftTrigger		= normalizeAxis(SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_TRIGGERLEFT), true);
+				controller.thumbRightX		= normalizeAxis(SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_RIGHTX), false);
+				controller.thumbRightY		= normalizeAxis(SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_RIGHTY), false);
+				controller.rightTrigger 	= normalizeAxis(SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_TRIGGERRIGHT), true);
 
 				//add to lists for ellen
 				et.controllers.push_back(controller);
