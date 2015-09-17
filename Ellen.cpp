@@ -1175,6 +1175,7 @@ void pollControllerEvents(struct cylonStruct& et)
 
 
 
+
 		else if(event.type == SDL_CONTROLLERAXISMOTION)
 		{
 			//iterate over controllers to find which one we're going to use
@@ -1297,7 +1298,10 @@ void pollControllerEvents(struct cylonStruct& et)
 						{
 							//Triggers are not 0 to +32K in SDL_Joystick devices
 							//TODO: normalize triggers for joysticks differently?f
-							iterator->leftTrigger = normalizeAxis(event.jaxis.value, false);
+							cout<<"trigger value before: "<<event.jaxis.value<<endl;
+							iterator->leftTrigger = (float) (( ( (event.jaxis.value - OLD_THUMB_MIN) * NEW_TRIGGER_RANGE)/OLD_THUMB_RANGE) + NEW_TRIGGER_MIN);
+							//iterator->leftTrigger = normalizeAxis(event.jaxis.value, false);
+							cout<<"trigger value after: "<<iterator->leftTrigger<<endl;
 						}
 						else if(event.jaxis.axis == 3)
 						{
@@ -1309,13 +1313,15 @@ void pollControllerEvents(struct cylonStruct& et)
 						}
 						else if(event.jaxis.axis == 5)
 						{
-							iterator->rightTrigger = normalizeAxis(event.jaxis.value, false);
+							cout<<"trigger value before: "<<event.jaxis.value<<endl;
+							iterator->rightTrigger = (float) (( ( (event.jaxis.value - OLD_THUMB_MIN) * NEW_TRIGGER_RANGE)/OLD_THUMB_RANGE) + NEW_TRIGGER_MIN);
+							cout<<"trigger value before: "<<iterator->rightTrigger<<endl;
+							//iterator->rightTrigger = normalizeAxis(event.jaxis.value, false);
 						}//END if axis selection
 					}//END if Xbox controller
 				}//END if ID's match
 			}//END iterator
 		}//END if joystick axis motion event
-
 
 
 	}//END WHILE SDL_PollEvent
