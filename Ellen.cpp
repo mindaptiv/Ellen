@@ -1113,7 +1113,7 @@ void pollControllerEvents(struct cylonStruct& et)
 	//while there are events to be handled
 	while(SDL_PollEvent(&event))
 	{
-		if(event.type == SDL_CONTROLLERBUTTONDOWN)
+	if(event.type == SDL_CONTROLLERBUTTONDOWN)
 		{
 			if(event.cbutton.state == SDL_PRESSED)
 			{
@@ -1143,6 +1143,41 @@ void pollControllerEvents(struct cylonStruct& et)
 			}//END if released
 		}//END outer if
 
+		else if(event.type == SDL_CONTROLLERAXISMOTION)
+				{
+					//iterate over controllers to find which one we're going to use
+					for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
+					{
+						if(event.caxis.which == (int)iterator->userIndex)
+						{
+							if(event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX)
+							{
+								iterator->thumbLeftX = normalizeAxis(event.caxis.value, false);
+							}
+							else if(event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY)
+							{
+								iterator->thumbLeftY = normalizeAxis(event.caxis.value, false);
+							}
+							else if(event.caxis.axis == SDL_CONTROLLER_AXIS_RIGHTX)
+							{
+								iterator->thumbRightX = normalizeAxis(event.caxis.value, false);
+							}
+							else if(event.caxis.axis == SDL_CONTROLLER_AXIS_RIGHTY)
+							{
+								iterator->thumbRightY = normalizeAxis(event.caxis.value, false);
+							}
+							else if(event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT)
+							{
+								iterator->leftTrigger = normalizeAxis(event.caxis.value, true);
+							}
+							else if(event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT)
+							{
+								iterator->rightTrigger = normalizeAxis(event.caxis.value, true);
+							}//END if decide axis
+						}//END if ID's match
+					}//END iterator
+				}//END if controller axis motion
+
 		else if(event.type == SDL_JOYBUTTONDOWN)
 		{
 			if(event.jbutton.state == SDL_PRESSED)
@@ -1153,6 +1188,44 @@ void pollControllerEvents(struct cylonStruct& et)
 					if((event.jbutton.which == (int)iterator->userIndex) && !SDL_IsGameController(event.jbutton.which))
 					{
 						iterator->buttons = pollButtons(iterator->buttons, event, false);
+
+						//Handle triggers as buttons for Playstation-based SDL_Joysticks
+						/*
+						 * LT => button == 8
+						 * RT => button == 9
+						 */
+						if(		(iterator->superDevice.name.find("Playstation") != std::string::npos)||
+								(iterator->superDevice.name.find("PlayStation") != std::string::npos)||
+								(iterator->superDevice.name.find("playstation") != std::string::npos)||
+								(iterator->superDevice.name.find("Play Station") != std::string::npos)||
+								(iterator->superDevice.name.find("play station") != std::string::npos)||
+								(iterator->superDevice.name.find("PS1") != std::string::npos)||
+								(iterator->superDevice.name.find("PSX") != std::string::npos)||
+								(iterator->superDevice.name.find("PS2") != std::string::npos)||
+								(iterator->superDevice.name.find("PS3") != std::string::npos)||
+								(iterator->superDevice.name.find("Dualshock") != std::string::npos)||
+								(iterator->superDevice.name.find("Dual Shock") != std::string::npos)||
+								(iterator->superDevice.name.find("DualShock") != std::string::npos)||
+								(iterator->superDevice.name.find("Sony") != std::string::npos)||
+								(iterator->superDevice.name.find("sony") != std::string::npos)||
+								(iterator->superDevice.name.find("Sixaxis") != std::string::npos)||
+								(iterator->superDevice.name.find("SixAxis") != std::string::npos)||
+								(iterator->superDevice.name.find("sixaxis") != std::string::npos)||
+								(iterator->superDevice.name.find("Six Axis") != std::string::npos)||
+								(iterator->superDevice.name.find("six axis")!= std::string::npos)
+						)
+						{
+							if(event.jbutton.button == 8)
+							{
+								iterator->leftTrigger = 1.0f;
+							}
+							else if(event.jbutton.button == 9)
+							{
+								iterator->rightTrigger = 1.0f;
+							}
+							cout<<iterator->leftTrigger<<"/"<<iterator->rightTrigger<<endl;
+						}//END if playstation device
+
 					}//END if ID's match & is NOT a GameController
 				}//END for
 			}//END if pressed
@@ -1165,66 +1238,59 @@ void pollControllerEvents(struct cylonStruct& et)
 				//iterate over controllers to find which one we're going to use
 				for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 				{
+					//TODO: only search for TODO dont use list incase if you typed like TODOR
 					if((event.jbutton.which == (int)iterator->userIndex) && !SDL_IsGameController(event.jbutton.which))
 					{
 						iterator->buttons = pollButtons(iterator->buttons, event, false);
+
+						//Handle triggers as buttons for Playstation-based SDL_Joysticks
+						/*
+						 * LT => button == 8
+						 * RT => button == 9
+						 */
+						if(		(iterator->superDevice.name.find("Playstation") != std::string::npos)||
+								(iterator->superDevice.name.find("PlayStation") != std::string::npos)||
+								(iterator->superDevice.name.find("playstation") != std::string::npos)||
+								(iterator->superDevice.name.find("Play Station") != std::string::npos)||
+								(iterator->superDevice.name.find("play station") != std::string::npos)||
+								(iterator->superDevice.name.find("PS1") != std::string::npos)||
+								(iterator->superDevice.name.find("PSX") != std::string::npos)||
+								(iterator->superDevice.name.find("PS2") != std::string::npos)||
+								(iterator->superDevice.name.find("PS3") != std::string::npos)||
+								(iterator->superDevice.name.find("Dualshock") != std::string::npos)||
+								(iterator->superDevice.name.find("Dual Shock") != std::string::npos)||
+								(iterator->superDevice.name.find("DualShock") != std::string::npos)||
+								(iterator->superDevice.name.find("Sony") != std::string::npos)||
+								(iterator->superDevice.name.find("sony") != std::string::npos)||
+								(iterator->superDevice.name.find("Sixaxis") != std::string::npos)||
+								(iterator->superDevice.name.find("SixAxis") != std::string::npos)||
+								(iterator->superDevice.name.find("sixaxis") != std::string::npos)||
+								(iterator->superDevice.name.find("Six Axis") != std::string::npos)||
+								(iterator->superDevice.name.find("six axis")!= std::string::npos)
+						)
+						{
+							if(event.jbutton.button == 8)
+							{
+								iterator->leftTrigger = 0.0f;
+							}
+							else if(event.jbutton.button == 9)
+							{
+								iterator->rightTrigger = 0.0f;
+							}
+							cout<<iterator->leftTrigger<<"/"<<iterator->rightTrigger<<endl;
+						}//END if playstation device
 					}//END if ID's match & is NOT a GameController
 				}//END for
 			}//END if released
 		}//END outer if
 
-
-
-
-		else if(event.type == SDL_CONTROLLERAXISMOTION)
-		{
-			//iterate over controllers to find which one we're going to use
-			for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
-			{
-				if(event.caxis.which == (int)iterator->userIndex)
-				{
-					if(event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX)
-					{
-						//TODO: normalize
-						iterator->thumbLeftX = normalizeAxis(event.caxis.value, false);
-					}
-					else if(event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY)
-					{
-						iterator->thumbLeftY = normalizeAxis(event.caxis.value, false);
-					}
-					else if(event.caxis.axis == SDL_CONTROLLER_AXIS_RIGHTX)
-					{
-						iterator->thumbRightX = normalizeAxis(event.caxis.value, false);
-					}
-					else if(event.caxis.axis == SDL_CONTROLLER_AXIS_RIGHTY)
-					{
-						iterator->thumbRightY = normalizeAxis(event.caxis.value, false);
-					}
-					else if(event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT)
-					{
-						iterator->leftTrigger = normalizeAxis(event.caxis.value, true);
-					}
-					else if(event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT)
-					{
-						iterator->rightTrigger = normalizeAxis(event.caxis.value, true);
-					}//END if decide axis
-				}//END if ID's match
-			}//END iterator
-		}//END if controller axis motion
-
-
-		//TODO: move this below controller axis motion
 		else if(event.type == SDL_JOYAXISMOTION)
 		{
-			cout<<"Axis: "<<(int)event.jaxis.axis<<endl;
-
 			//iterate over controllers to find which one we're going to use
 			for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 			{
 				if((event.jaxis.which == (int)iterator->userIndex) )//&& !SDL_IsGameController(event.jaxis.which))
 				{
-
-					cout<<SDL_JoystickNameForIndex(event.jaxis.which)<<endl;
 					//USE tested/assumed playstation axis mapping
 					/*
 					 * LY == 0
@@ -1232,6 +1298,7 @@ void pollControllerEvents(struct cylonStruct& et)
 					 * RX == 3
 					 * RY == 2
 					 */
+					//TODO: replace this if statement with a function
 					if(		(iterator->superDevice.name.find("Playstation") != std::string::npos)||
 							(iterator->superDevice.name.find("PlayStation") != std::string::npos)||
 							(iterator->superDevice.name.find("playstation") != std::string::npos)||
@@ -1253,9 +1320,6 @@ void pollControllerEvents(struct cylonStruct& et)
 							(iterator->superDevice.name.find("six axis")!= std::string::npos)
 					)
 					{
-
-						cout<<"lol station"<<endl;
-
 						if(event.jaxis.axis == 0)
 						{
 							iterator->thumbLeftY = normalizeAxis(event.jaxis.value, false);
@@ -1285,7 +1349,6 @@ void pollControllerEvents(struct cylonStruct& et)
 					 */
 					else
 					{
-						cout<<"Ehcks Bawks"<<endl;
 						if(event.jaxis.axis == 0)
 						{
 							iterator->thumbLeftX = normalizeAxis(event.jaxis.value, false);
@@ -1297,11 +1360,7 @@ void pollControllerEvents(struct cylonStruct& et)
 						else if(event.jaxis.axis == 2)
 						{
 							//Triggers are not 0 to +32K in SDL_Joystick devices
-							//TODO: normalize triggers for joysticks differently?f
-							cout<<"trigger value before: "<<event.jaxis.value<<endl;
 							iterator->leftTrigger = (float) (( ( (event.jaxis.value - OLD_THUMB_MIN) * NEW_TRIGGER_RANGE)/OLD_THUMB_RANGE) + NEW_TRIGGER_MIN);
-							//iterator->leftTrigger = normalizeAxis(event.jaxis.value, false);
-							cout<<"trigger value after: "<<iterator->leftTrigger<<endl;
 						}
 						else if(event.jaxis.axis == 3)
 						{
@@ -1313,17 +1372,14 @@ void pollControllerEvents(struct cylonStruct& et)
 						}
 						else if(event.jaxis.axis == 5)
 						{
-							cout<<"trigger value before: "<<event.jaxis.value<<endl;
 							iterator->rightTrigger = (float) (( ( (event.jaxis.value - OLD_THUMB_MIN) * NEW_TRIGGER_RANGE)/OLD_THUMB_RANGE) + NEW_TRIGGER_MIN);
-							cout<<"trigger value before: "<<iterator->rightTrigger<<endl;
-							//iterator->rightTrigger = normalizeAxis(event.jaxis.value, false);
 						}//END if axis selection
 					}//END if Xbox controller
 				}//END if ID's match
 			}//END iterator
 		}//END if joystick axis motion event
 
-
+		//TODO: add hat event handling
 	}//END WHILE SDL_PollEvent
 }//END Poller
 
@@ -1529,8 +1585,6 @@ uint16_t pollButtons(uint16_t buttons, SDL_Event event, bool isGameController)
 //Normalize a polled axis
 float normalizeAxis(float oldAxisValue, bool isTrigger)
 {
-	cout<<"Old Axis Value: "<<oldAxisValue<<endl;
-
 	//Variable Declaration
 	float newAxisValue;
 
@@ -1542,10 +1596,6 @@ float normalizeAxis(float oldAxisValue, bool isTrigger)
 	{
 		newAxisValue = (float) (( ( (oldAxisValue - OLD_THUMB_MIN) * NEW_THUMB_RANGE)/OLD_THUMB_RANGE) + NEW_THUMB_MIN);
 	}
-
-	//TODO: remove log
-
-	cout<<"New Axis Value: "<<newAxisValue<<endl;
 
 	//return
 	return newAxisValue;
