@@ -396,6 +396,7 @@ void produceDeviceInfo(struct cylonStruct& et)
 
 void produceControllerInfo(struct cylonStruct& et)
 {
+	//TODO: cleanup
 	//int result = SDL_Init(SDL_INIT_GAMECONTROLLER | SDL_INIT_JOYSTICK);
 	/*if (result < 0)
 	{
@@ -465,13 +466,14 @@ void produceControllerInfo(struct cylonStruct& et)
 			deviceStruct		device 		= buildControllerDevice(i, SDL_JoystickName(joy));
 			controllerStruct 	controller	= buildController(joy, device, i);
 
-			//grab axis values
+			//TODO: cleanup if not needed
+	/*		//grab axis values
 			int numAxes = SDL_JoystickNumAxes(joy);
 
 			Sint16 test		= SDL_JoystickGetAxis(joy, false);
 			cout<<"Num Axes: "<<numAxes<<endl;
 			cout<<"Test axes 0: "<<test<<endl;
-
+*/
 			//add to lists for ellen
 			et.controllers.push_back(controller);
 			device.controllerIndex = et.controllers.size() - 1;
@@ -595,8 +597,6 @@ void produceUsbDeviceInfo(cylonStruct& et)
 		//exit from lib
 		_libusb_exit(context);
 
-		//TODO: handle special device types (controllers, etc.)
-
 		//grab the lsusb output (if available)
 		//Variable Declaration
 		char buffer[8192];
@@ -644,8 +644,6 @@ void produceUsbDeviceInfo(cylonStruct& et)
 				sscanf(match, "%x:%x %[^\t\n]", &dontcare, &dontcare2, englishName);
 				detectedDevices.front().name = englishName;
 			}//END if match is null
-
-			//TODO: remove all other unnecessary loggings (Kenny Loggins?)
 
 			//empty list and move contents to cylon's list
 			et.detectedDevices.push_back(detectedDevices.front());
@@ -796,7 +794,6 @@ struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_d
 	//class per interface
 	if (devType == LIBUSB_CLASS_PER_INTERFACE)
 	{
-		//TODO: parse interface, if necessary
 		device.deviceType = ERROR_TYPE;
 	}
 	else if (devType == LIBUSB_CLASS_AUDIO)
@@ -1144,7 +1141,8 @@ void pollControllerEvents(struct cylonStruct& et)
 		}//END outer if
 
 		else if(event.type == SDL_CONTROLLERAXISMOTION)
-				{
+		{
+
 					//iterate over controllers to find which one we're going to use
 					for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 					{
@@ -1182,11 +1180,14 @@ void pollControllerEvents(struct cylonStruct& et)
 		{
 			if(event.jbutton.state == SDL_PRESSED)
 			{
+
 				//iterate over joysticks to find which one we're going to use
 				for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 				{
+					//pick the right controller struct
 					if((event.jbutton.which == (int)iterator->userIndex) && !SDL_IsGameController(event.jbutton.which))
 					{
+						//NOTE: not standardized therefore not 100% reliable
 						iterator->buttons = pollButtons(iterator->buttons, event, false);
 
 						//Handle triggers as buttons for Playstation-based SDL_Joysticks
@@ -1223,7 +1224,6 @@ void pollControllerEvents(struct cylonStruct& et)
 							{
 								iterator->rightTrigger = 1.0f;
 							}
-							cout<<iterator->leftTrigger<<"/"<<iterator->rightTrigger<<endl;
 						}//END if playstation device
 
 					}//END if ID's match & is NOT a GameController
@@ -1241,6 +1241,7 @@ void pollControllerEvents(struct cylonStruct& et)
 					//TODO: only search for TODO dont use list incase if you typed like TODOR
 					if((event.jbutton.which == (int)iterator->userIndex) && !SDL_IsGameController(event.jbutton.which))
 					{
+						//NOTE: not standardized therefore not 100% reliable
 						iterator->buttons = pollButtons(iterator->buttons, event, false);
 
 						//Handle triggers as buttons for Playstation-based SDL_Joysticks
@@ -1277,7 +1278,6 @@ void pollControllerEvents(struct cylonStruct& et)
 							{
 								iterator->rightTrigger = 0.0f;
 							}
-							cout<<iterator->leftTrigger<<"/"<<iterator->rightTrigger<<endl;
 						}//END if playstation device
 					}//END if ID's match & is NOT a GameController
 				}//END for
@@ -1286,10 +1286,12 @@ void pollControllerEvents(struct cylonStruct& et)
 
 		else if(event.type == SDL_JOYAXISMOTION)
 		{
+
 			//iterate over controllers to find which one we're going to use
 			for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 			{
-				if((event.jaxis.which == (int)iterator->userIndex) )//&& !SDL_IsGameController(event.jaxis.which))
+				//select the right controllerStruct
+				if((event.jaxis.which == (int)iterator->userIndex) && !SDL_IsGameController(event.jaxis.which))
 				{
 					//USE tested/assumed playstation axis mapping
 					/*
@@ -1379,7 +1381,93 @@ void pollControllerEvents(struct cylonStruct& et)
 			}//END iterator
 		}//END if joystick axis motion event
 
-		//TODO: add hat event handling
+		else if(event.type == SDL_JOYHATMOTION)
+		{
+			//iterate over controllers to select correct struct
+			for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
+			{
+				//if the controller ID's match
+				if((event.jhat.which == (int)iterator->userIndex) && !SDL_IsGameController(event.jaxis.which))
+				{
+					if(event.jhat.value== SDL_HAT_LEFTUP)
+					{
+						iterator->buttons |= UP_DPAD;
+						iterator->buttons |= LEFT_DPAD;
+
+					}
+					else if(event.jhat.value== SDL_HAT_UP)
+					{
+						iterator->buttons |= UP_DPAD;
+					}
+					else if(event.jhat.value== SDL_HAT_RIGHTUP)
+					{
+						iterator->buttons |= RIGHT_DPAD;
+						iterator->buttons |= UP_DPAD;
+					}
+					else if(event.jhat.value== SDL_HAT_LEFT)
+					{
+						iterator->buttons |= LEFT_DPAD;
+					}
+					else if(event.jhat.value== SDL_HAT_CENTERED)
+					{
+						if((iterator->buttons & UP_DPAD) == UP_DPAD)
+						{
+							iterator->buttons -= UP_DPAD;
+						}
+						if((iterator->buttons & DOWN_DPAD) == DOWN_DPAD)
+						{
+							iterator->buttons -= DOWN_DPAD;
+						}
+						if((iterator->buttons & LEFT_DPAD) == LEFT_DPAD)
+						{
+							iterator->buttons -= LEFT_DPAD;
+						}
+						if((iterator->buttons & RIGHT_DPAD) == RIGHT_DPAD)
+						{
+							iterator->buttons -= RIGHT_DPAD;
+						}
+					}
+					else if(event.jhat.value == SDL_HAT_RIGHT)
+					{
+						iterator->buttons |= RIGHT_DPAD;
+					}
+					else if(event.jhat.value == SDL_HAT_LEFTDOWN)
+					{
+						iterator->buttons |= LEFT_DPAD;
+						iterator->buttons |= DOWN_DPAD;
+					}
+					else if(event.jhat.value == SDL_HAT_DOWN)
+					{
+						iterator->buttons |= DOWN_DPAD;
+					}
+					else if(event.jhat.value == SDL_HAT_RIGHTDOWN)
+					{
+						iterator->buttons |= RIGHT_DPAD;
+						iterator->buttons |= DOWN_DPAD;
+					}
+					else if(event.jhat.value  == 0)
+					{
+						if((iterator->buttons & UP_DPAD) == UP_DPAD)
+						{
+							iterator->buttons -= UP_DPAD;
+						}
+						if((iterator->buttons & DOWN_DPAD) == DOWN_DPAD)
+						{
+							iterator->buttons -= DOWN_DPAD;
+						}
+						if((iterator->buttons & LEFT_DPAD) == LEFT_DPAD)
+						{
+							iterator->buttons -= LEFT_DPAD;
+						}
+						if((iterator->buttons & RIGHT_DPAD) == RIGHT_DPAD)
+						{
+							iterator->buttons -= RIGHT_DPAD;
+						}
+					}//END inner if
+				}//END if controllers match
+			}//END iterator
+		}//END if SDL Joystick Hat Event
+
 	}//END WHILE SDL_PollEvent
 }//END Poller
 
@@ -1569,12 +1657,11 @@ uint16_t pollButtons(uint16_t buttons, SDL_Event event, bool isGameController)
 	{
 		if(state == SDL_PRESSED)
 		{
-			//TODO: add to cylon.h
-			buttons |= 0x0400;
+			buttons |= HOME_BUTTON;
 		}
-		else if(state == SDL_RELEASED && ((buttons & 0x0400) == 0x0400))
+		else if(state == SDL_RELEASED && ((buttons & HOME_BUTTON) == HOME_BUTTON))
 		{
-			buttons -= 0x0400;
+			buttons -= HOME_BUTTON;
 		}
 	}//END IF
 
