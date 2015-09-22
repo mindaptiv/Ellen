@@ -442,7 +442,7 @@ void produceControllerInfo(struct cylonStruct& et)
 			{
 				//build structs
 				deviceStruct 	device			= buildControllerDevice(i, SDL_GameControllerName(sdlPad));
-				controllerStruct controller 		= buildController(sdlPad, device, i);
+				controllerStruct controller 		= buildController(device, i, SDL_JoystickInstanceID(joy));
 
 				//credit to davidgow.net for partial input code
 				controller.thumbLeftX 		= normalizeAxis(SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_LEFTX), false);
@@ -464,16 +464,8 @@ void produceControllerInfo(struct cylonStruct& et)
 		{
 			//Use Joystick class to build device and controller structs
 			deviceStruct		device 		= buildControllerDevice(i, SDL_JoystickName(joy));
-			controllerStruct 	controller	= buildController(joy, device, i);
+			controllerStruct 	controller	= buildController(device, i, SDL_JoystickInstanceID(joy));
 
-			//TODO: cleanup if not needed
-	/*		//grab axis values
-			int numAxes = SDL_JoystickNumAxes(joy);
-
-			Sint16 test		= SDL_JoystickGetAxis(joy, false);
-			cout<<"Num Axes: "<<numAxes<<endl;
-			cout<<"Test axes 0: "<<test<<endl;
-*/
 			//add to lists for ellen
 			et.controllers.push_back(controller);
 			device.controllerIndex = et.controllers.size() - 1;
@@ -1055,7 +1047,7 @@ struct controllerStruct buildBlankController()
 }
 
 //Build a controllerStruct using an SDL_GameController pointer
-struct controllerStruct buildController(SDL_GameController* sdlPad, deviceStruct device, int index)
+struct controllerStruct buildController(deviceStruct device, int index, int id)
 {
 	//Variable Declaration
 	struct controllerStruct controller;
@@ -1066,6 +1058,10 @@ struct controllerStruct buildController(SDL_GameController* sdlPad, deviceStruct
 	//set user index
 	controller.userIndex = index;
 
+	//set instance id of controller
+	controller.id = id;
+	cout<<"Controller built with instance id: "<<controller.id<<endl;
+
 	//set fields that may change later
 	controller.buttons = 0;
 
@@ -1075,28 +1071,6 @@ struct controllerStruct buildController(SDL_GameController* sdlPad, deviceStruct
 	//Return
 	return controller;
 }//END builder
-
-//Build a controllerStruct using an SDL_Joystick pointer
-struct controllerStruct buildController(SDL_Joystick* joystick, deviceStruct device, int index)
-{
-	//Variable Declaration
-	struct controllerStruct controller;
-
-	//Set parent
-	controller.superDevice = device;
-
-	//set user index
-	controller.userIndex = index;
-
-	//set fields that may change later
-	controller.buttons = 0;
-
-	//set fields to basic defaults
-	controller.packetNumber = ERROR_INT;
-
-	//Return
-	return controller;
-}
 
 //END builders
 
@@ -1175,6 +1149,25 @@ void pollControllerEvents(struct cylonStruct& et)
 						}//END if ID's match
 					}//END iterator
 				}//END if controller axis motion
+
+		else if(event.type == SDL_CONTROLLERDEVICEADDED)
+		{
+			//credit to Ryan C Gordon @ libsdl.org for clarification
+			//which for this event == joystick index for added device
+			//which for this event == instance id for the removed
+			//TODO: store instance ID in controllerStruct id field
+			cout<<"controller added"<<endl;
+		}
+
+		else if(event.type == SDL_CONTROLLERDEVICEREMOVED)
+		{
+			cout<<"controller removed"<<endl;
+		}
+
+		else if(event.type == SDL_CONTROLLERDEVICEREMAPPED)
+		{
+			//NOTE: currently unused, but can handled stuff here if we decide to support remapping in-app  down the road
+		}
 
 		else if(event.type == SDL_JOYBUTTONDOWN)
 		{
@@ -1467,6 +1460,16 @@ void pollControllerEvents(struct cylonStruct& et)
 				}//END if controllers match
 			}//END iterator
 		}//END if SDL Joystick Hat Event
+
+		else if(event.type == SDL_JOYDEVICEADDED)
+		{
+			cout<<"joystick added"<<endl;
+		}
+
+		else if(event.type == SDL_JOYDEVICEREMOVED)
+		{
+			cout<<"joystick removed"<<endl;
+		}
 
 	}//END WHILE SDL_PollEvent
 }//END Poller

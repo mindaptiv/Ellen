@@ -165,8 +165,7 @@ struct deviceStruct buildUsbDevice(struct libusb_device*, struct libusb_device_d
 struct deviceStruct buildUsbDevice(struct libusb_device* device, struct libusb_device_descriptor descriptor, int interfaceClass);
 struct deviceStruct buildControllerDevice(int index, const char* deviceName);
 struct controllerStruct buildBlankController();
-struct controllerStruct buildController(SDL_GameController* sdlPad, deviceStruct device, int index);
-struct controllerStruct buildController(SDL_Joystick* joystick, deviceStruct device, int index);
+struct controllerStruct buildController(deviceStruct device, int index, int id);
 
 //Pollers
 void pollControllerEvents(struct cylonStruct& et);
