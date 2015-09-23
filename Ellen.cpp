@@ -441,7 +441,7 @@ void produceControllerInfo(struct cylonStruct& et)
 			else
 			{
 				//build structs
-				deviceStruct 	device			= buildControllerDevice(i, SDL_GameControllerName(sdlPad));
+				deviceStruct 	device			= buildControllerDevice(i, SDL_GameControllerName(sdlPad), SDL_JoystickInstanceID(joy));
 				controllerStruct controller 		= buildController(device, i, SDL_JoystickInstanceID(joy));
 
 				//credit to davidgow.net for partial input code
@@ -463,7 +463,7 @@ void produceControllerInfo(struct cylonStruct& et)
 		else
 		{
 			//Use Joystick class to build device and controller structs
-			deviceStruct		device 		= buildControllerDevice(i, SDL_JoystickName(joy));
+			deviceStruct		device 		= buildControllerDevice(i, SDL_JoystickName(joy), SDL_JoystickInstanceID(joy));
 			controllerStruct 	controller	= buildController(device, i, SDL_JoystickInstanceID(joy));
 
 			//add to lists for ellen
@@ -619,7 +619,7 @@ void produceUsbDeviceInfo(cylonStruct& et)
 			oss << hex<< setfill('0')<<setw(4)<<detectedDevices.front().vendorID;
 			std::string spotStr = oss.str();
 			oss << dec;
-			spotStr = spotStr + ":" + detectedDevices.front().id;
+			spotStr = spotStr + ":" + detectedDevices.front().id_string;
 
 			const char* spot = spotStr.c_str();
 			char* match = strstr(buffer, spot);
@@ -645,6 +645,8 @@ void produceUsbDeviceInfo(cylonStruct& et)
 
 void produceLog(struct cylonStruct& et)
 {
+//TODO: restore this
+	/*
 	cout<<"Cylon @: "<<&et<<endl;
 	cout<<"Username: "<<et.username<<endl;
 	cout<<"Device Name: "<<et.deviceName<<endl;
@@ -665,14 +667,14 @@ void produceLog(struct cylonStruct& et)
 	cout<<"Detected Device Count: "<<et.detectedDeviceCount<<endl;
 	cout<<"Error: "<<et.error<<endl;
 	cout<<"Devices: "<<endl;
-
+*/
 	//credit to kmpofighter @ cplusplus.com for partial method code
 	for(list<deviceStruct>::const_iterator iterator = et.detectedDevices.begin(), end = et.detectedDevices.end(); iterator != end; ++iterator)
 	{
 		cout<<"\t"<<"Name: "<<iterator->name<<endl;
 		cout<<"\t"<<"Type: "<<iterator->deviceType<<endl;
 		cout<<"\t"<<"Vendor ID: "<<hex<<iterator->vendorID<<dec<<endl;
-		cout<<"\t"<<"Id: "<<iterator->id<<endl;
+		cout<<"\t"<<"Id: "<<iterator->id_int<<endl;
 		cout<<"\t"<<"Orientation: "<<iterator->orientation<<endl;
 		cout<<"\t"<<"Controller Index: "<<iterator->controllerIndex<<endl;
 		cout<<"\t"<<"Display Index: "<<iterator->displayIndex<<endl;
@@ -680,11 +682,11 @@ void produceLog(struct cylonStruct& et)
 	}
 
 	cout<<"Controllers: "<<endl;
-
 	for(list<controllerStruct>::const_iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 	{
 		cout<<"\t"<<"Controller #: "<<iterator->userIndex<<endl;
 		cout<<"\t"<<"Instance ID: "<<iterator->id<<endl;
+		cout<<"\t"<<"Name: "<<iterator->superDevice.name<<endl;
 		cout<<"\t"<<"Buttons Mask: "<<hex<<iterator->buttons<<dec<<endl;
 		cout<<"\t"<<"Left Trigger: "<<iterator->leftTrigger<<endl;
 		cout<<"\t"<<"Right Trigger: "<<iterator->rightTrigger<<endl;
@@ -744,7 +746,8 @@ struct deviceStruct buildBlankDevice()
 	device.sensorsIndex		= ERROR_INT;
 	device.vendorID			= ERROR_INT;
 	device.name				= ERROR_STRING;
-	device.id				= ERROR_STRING;
+	device.id_string		= ERROR_STRING;
+	device.id_int			= ERROR_INT;
 	device.deviceType		= ERROR_INT;
 
 	//Return
@@ -771,12 +774,13 @@ struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_d
 
 	//grab fields from arguments
 	device.vendorID			= descriptor.idVendor;
+	device.id_int			= descriptor.idProduct;
 
 	//Convert id to string and save it
 	//Credit to Benoit @ stackoverflow for partial method code
 	ostringstream s;
 	s << hex<< setfill('0')<<setw(4)<< descriptor.idProduct;
-	device.id = s.str();
+	device.id_string = s.str();
 	s << dec;
 
 	//grab bDeviceClass and interpret
@@ -885,12 +889,13 @@ struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_d
 
 	//grab fields from arguments
 	device.vendorID			= descriptor.idVendor;
+	device.id_int			= descriptor.idProduct;
 
 	//Convert id to string and save it
 	//Credit to Benoit @ stackoverflow for partial method code
 	ostringstream s;
 	s << hex<< setfill('0')<<setw(4)<< descriptor.idProduct;
-	device.id = s.str();
+	device.id_string = s.str();
 	s << dec;
 
 	//grab bDeviceClass and interpret
@@ -986,7 +991,7 @@ struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_d
 	return device;
 }
 
-struct deviceStruct buildControllerDevice(int index, const char* deviceName)
+struct deviceStruct buildControllerDevice(int index, const char* deviceName, int instanceID)
 {
 	//Variable Declaration
 	struct deviceStruct device;
@@ -1018,7 +1023,8 @@ struct deviceStruct buildControllerDevice(int index, const char* deviceName)
 
 	//grab names
 	device.name 		= deviceName;
-	device.id			= "" + index;
+	device.id_string	= "" + instanceID;
+	device.id_int		= instanceID;
 
 	//Return
 	return device;
@@ -1182,7 +1188,7 @@ void pollControllerEvents(struct cylonStruct& et)
 				if(!existingInstance)
 				{
 					//SDL_JoystickInstanceID()
-					deviceStruct device 		= buildControllerDevice(event.cdevice.which, SDL_GameControllerNameForIndex(event.cdevice.which));
+					deviceStruct device 		= buildControllerDevice(event.cdevice.which, SDL_GameControllerNameForIndex(event.cdevice.which), SDL_JoystickInstanceID(joystick));
 					controllerStruct controller = buildController(device, event.cdevice.which, SDL_JoystickInstanceID(joystick));
 
 					//credit to davidgow.net for partial input code
@@ -1205,8 +1211,59 @@ void pollControllerEvents(struct cylonStruct& et)
 
 		else if(event.type == SDL_CONTROLLERDEVICEREMOVED)
 		{
-			cout<<"controller removed"<<endl;
-		}
+			cout<<"controller removed "<<event.cdevice.which<<endl;
+			//which for this event == instance id for the removed
+
+			//iterate over all controllers and find the one to purge
+			for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
+			{
+				//pick the right controller struct
+				if((int)iterator->id == event.cdevice.which)
+				{
+					//Remove the deviceStruct from devices
+					for(list<deviceStruct>::iterator iteratorDevices = et.detectedDevices.begin(), end = et.detectedDevices.end(); iteratorDevices != end; ++iteratorDevices)
+					{
+						//make sure devices have the same name, same type as controllers, and same instance ID
+						if
+						(
+								(iterator->superDevice.id_int == iteratorDevices->id_int) &&
+								(iterator->superDevice.name   == iteratorDevices->name) &&
+								(iterator->superDevice.deviceType == CONTROLLER_TYPE) &&
+								(iteratorDevices->deviceType == CONTROLLER_TYPE)
+						)
+						{
+							et.detectedDevices.erase(iteratorDevices);
+
+							//due to double adding being prevented in CONTROLLERDEVICEADDED events,
+							//we can break now since there should never be two devices with same instance id
+							break;
+						}
+					}
+
+					//Remove the controllerStruct from controllers
+					et.controllers.erase(iterator);
+
+					//due to double adding being prevented in CONTROLLERDEVICEADDED events,
+					//we can break now since there should never be two devices with same instance id
+					break;
+				}//END if need to erase controllerStruct
+			}//END iterator
+
+			//TODO
+			//Now recompute the player indexes
+			for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
+			{
+				if(iterator->userIndex > 0)
+				{
+					//TODO: UNICORN PICK UP HERE
+					/*iterator->userIndex -= 1;
+					iterator->superDevice.controllerIndex = iterator->userIndex;
+				*/}
+			}//END for all controllers
+
+			//TODO: remove this
+			produceLog(et);
+		}//END controller device removed
 
 		else if(event.type == SDL_CONTROLLERDEVICEREMAPPED)
 		{

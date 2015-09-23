@@ -139,7 +139,8 @@ struct deviceStruct
 	uint32_t		orientation;		//orientation of the device
 	uint32_t		vendorID;			//vendor ID
 	std::string     name;
-	std::string		id;
+	std::string		id_string;			//id in string format
+	uint32_t		id_int;				//id in integer format
 
 	//type
 	uint32_t				deviceType;
