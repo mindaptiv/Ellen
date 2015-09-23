@@ -681,10 +681,10 @@ void produceLog(struct cylonStruct& et)
 
 	cout<<"Controllers: "<<endl;
 
-	int controllerCount = 0;
 	for(list<controllerStruct>::const_iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 	{
-		cout<<"\t"<<"Controller #: "<<controllerCount<<endl;
+		cout<<"\t"<<"Controller #: "<<iterator->userIndex<<endl;
+		cout<<"\t"<<"Instance ID: "<<iterator->id<<endl;
 		cout<<"\t"<<"Buttons Mask: "<<hex<<iterator->buttons<<dec<<endl;
 		cout<<"\t"<<"Left Trigger: "<<iterator->leftTrigger<<endl;
 		cout<<"\t"<<"Right Trigger: "<<iterator->rightTrigger<<endl;
@@ -692,7 +692,6 @@ void produceLog(struct cylonStruct& et)
 		cout<<"\t"<<"Left Y: "<<iterator->thumbLeftY<<endl;
 		cout<<"\t"<<"Right X: "<<iterator->thumbRightX<<endl;
 		cout<<"\t"<<"Right Y: "<<iterator->thumbRightY<<endl<<endl;
-		controllerCount++;
 	}
 	cout<<"Log done"<<endl;
 }//END produceLog
@@ -1091,7 +1090,7 @@ void pollControllerEvents(struct cylonStruct& et)
 				//iterate over controllers to find which one we're going to use
 				for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 				{
-					if(event.cbutton.which == (int)iterator->userIndex)
+					if(event.cbutton.which == (int)iterator->id)
 					{
 						iterator->buttons = pollButtons(iterator->buttons, event, true);
 					}//END if id's match
@@ -1106,7 +1105,7 @@ void pollControllerEvents(struct cylonStruct& et)
 				//iterate over controllers to find which one we're going to use
 				for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 				{
-					if(event.cbutton.which == (int)iterator->userIndex)
+					if(event.cbutton.which == (int)iterator->id)
 					{
 						iterator->buttons = pollButtons(iterator->buttons, event, true);
 					}//END if id's match
@@ -1120,7 +1119,7 @@ void pollControllerEvents(struct cylonStruct& et)
 					//iterate over controllers to find which one we're going to use
 					for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 					{
-						if(event.caxis.which == (int)iterator->userIndex)
+						if(event.caxis.which == (int)iterator->id)
 						{
 							if(event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX)
 							{
@@ -1155,9 +1154,54 @@ void pollControllerEvents(struct cylonStruct& et)
 			//credit to Ryan C Gordon @ libsdl.org for clarification
 			//which for this event == joystick index for added device
 			//which for this event == instance id for the removed
-			//TODO: store instance ID in controllerStruct id field
 			cout<<"controller added"<<endl;
-		}
+
+			//Attempt to open controller
+			SDL_GameController* gamePad 	= SDL_GameControllerOpen(event.cdevice.which);
+			SDL_Joystick*		joystick 	= SDL_JoystickOpen(event.cdevice.which);
+
+			if(!gamePad || !joystick)
+			{
+				//do nothing for now, open failed
+			}
+			else
+			{
+				bool existingInstance = false;
+
+				//iterate over all controllers and verify
+				for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
+				{
+					//pick the right controller struct
+					if((int)iterator->id == (int)SDL_JoystickInstanceID(joystick))
+					{
+						existingInstance = true;
+					}//END if Id's match
+				}//END iterator
+
+				//if that controller isn't already in our list, add it to our list
+				if(!existingInstance)
+				{
+					//SDL_JoystickInstanceID()
+					deviceStruct device 		= buildControllerDevice(event.cdevice.which, SDL_GameControllerNameForIndex(event.cdevice.which));
+					controllerStruct controller = buildController(device, event.cdevice.which, SDL_JoystickInstanceID(joystick));
+
+					//credit to davidgow.net for partial input code
+					controller.thumbLeftX 		= normalizeAxis(SDL_GameControllerGetAxis(gamePad, SDL_CONTROLLER_AXIS_LEFTX), false);
+					controller.thumbLeftY		= normalizeAxis(SDL_GameControllerGetAxis(gamePad, SDL_CONTROLLER_AXIS_LEFTY), false);
+					controller.leftTrigger		= normalizeAxis(SDL_GameControllerGetAxis(gamePad, SDL_CONTROLLER_AXIS_TRIGGERLEFT), true);
+					controller.thumbRightX		= normalizeAxis(SDL_GameControllerGetAxis(gamePad, SDL_CONTROLLER_AXIS_RIGHTX), false);
+					controller.thumbRightY		= normalizeAxis(SDL_GameControllerGetAxis(gamePad, SDL_CONTROLLER_AXIS_RIGHTY), false);
+					controller.rightTrigger 	= normalizeAxis(SDL_GameControllerGetAxis(gamePad, SDL_CONTROLLER_AXIS_TRIGGERRIGHT), true);
+
+					//add to lists for ellen
+					et.controllers.push_back(controller);
+					device.controllerIndex = et.controllers.size() - 1;
+					et.detectedDevices.push_back(device);
+				}//END if new device
+			}//end if open gamePad/joystick successful
+			//TODO: remove this
+			produceLog(et);
+		}//END if controller device added
 
 		else if(event.type == SDL_CONTROLLERDEVICEREMOVED)
 		{
@@ -1178,7 +1222,7 @@ void pollControllerEvents(struct cylonStruct& et)
 				for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 				{
 					//pick the right controller struct
-					if((event.jbutton.which == (int)iterator->userIndex) && !SDL_IsGameController(event.jbutton.which))
+					if((event.jbutton.which == (int)iterator->id) && !SDL_IsGameController(event.jbutton.which))
 					{
 						//NOTE: not standardized therefore not 100% reliable
 						iterator->buttons = pollButtons(iterator->buttons, event, false);
@@ -1232,7 +1276,7 @@ void pollControllerEvents(struct cylonStruct& et)
 				for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 				{
 					//TODO: only search for TODO dont use list incase if you typed like TODOR
-					if((event.jbutton.which == (int)iterator->userIndex) && !SDL_IsGameController(event.jbutton.which))
+					if((event.jbutton.which == (int)iterator->id) && !SDL_IsGameController(event.jbutton.which))
 					{
 						//NOTE: not standardized therefore not 100% reliable
 						iterator->buttons = pollButtons(iterator->buttons, event, false);
@@ -1284,7 +1328,7 @@ void pollControllerEvents(struct cylonStruct& et)
 			for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 			{
 				//select the right controllerStruct
-				if((event.jaxis.which == (int)iterator->userIndex) && !SDL_IsGameController(event.jaxis.which))
+				if((event.jaxis.which == (int)iterator->id) && !SDL_IsGameController(event.jaxis.which))
 				{
 					//USE tested/assumed playstation axis mapping
 					/*
@@ -1380,7 +1424,7 @@ void pollControllerEvents(struct cylonStruct& et)
 			for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 			{
 				//if the controller ID's match
-				if((event.jhat.which == (int)iterator->userIndex) && !SDL_IsGameController(event.jaxis.which))
+				if((event.jhat.which == (int)iterator->id) && !SDL_IsGameController(event.jaxis.which))
 				{
 					if(event.jhat.value== SDL_HAT_LEFTUP)
 					{
