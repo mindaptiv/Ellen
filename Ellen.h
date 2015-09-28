@@ -167,9 +167,11 @@ struct deviceStruct buildControllerDevice(int index, const char* deviceName, int
 struct controllerStruct buildBlankController();
 struct controllerStruct buildController(deviceStruct device, int index, int id);
 
-//Pollers
+//Controller methods
 void pollControllerEvents(struct cylonStruct& et);
 uint16_t pollButtons(uint16_t buttons, SDL_Event event, bool isGameController);
 float normalizeAxis(float oldAxisValue, bool isTrigger);
+bool isPSX(std::string gamepadName);
+void synchControllerDevices(struct cylonStruct& et);
 
 #endif /* ELLEN_H_ */

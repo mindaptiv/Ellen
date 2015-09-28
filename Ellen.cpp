@@ -1079,7 +1079,7 @@ struct controllerStruct buildController(deviceStruct device, int index, int id)
 
 //END builders
 
-//Pollers
+//Controllers
 //parse gamecontroller and joystick events via event handling
 void pollControllerEvents(struct cylonStruct& et)
 {
@@ -1165,6 +1165,7 @@ void pollControllerEvents(struct cylonStruct& et)
 			//Attempt to open controller
 			SDL_GameController* gamePad 	= SDL_GameControllerOpen(event.cdevice.which);
 			SDL_Joystick*		joystick 	= SDL_JoystickOpen(event.cdevice.which);
+			bool				existingInstance = false;
 
 			if(!gamePad || !joystick)
 			{
@@ -1172,8 +1173,6 @@ void pollControllerEvents(struct cylonStruct& et)
 			}
 			else
 			{
-				bool existingInstance = false;
-
 				//iterate over all controllers and verify
 				for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 				{
@@ -1205,8 +1204,15 @@ void pollControllerEvents(struct cylonStruct& et)
 					et.detectedDevices.push_back(device);
 				}//END if new device
 			}//end if open gamePad/joystick successful
-			//TODO: remove this
-			produceLog(et);
+
+			//Now recompute the player indexes
+			if(!existingInstance)
+			{
+				synchControllerDevices(et);
+
+				//TODO: remove this
+				produceLog(et);
+			}
 		}//END if controller device added
 
 		else if(event.type == SDL_CONTROLLERDEVICEREMOVED)
@@ -1249,17 +1255,8 @@ void pollControllerEvents(struct cylonStruct& et)
 				}//END if need to erase controllerStruct
 			}//END iterator
 
-			//TODO
 			//Now recompute the player indexes
-			for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
-			{
-				if(iterator->userIndex > 0)
-				{
-					//TODO: UNICORN PICK UP HERE
-					/*iterator->userIndex -= 1;
-					iterator->superDevice.controllerIndex = iterator->userIndex;
-				*/}
-			}//END for all controllers
+			synchControllerDevices(et);
 
 			//TODO: remove this
 			produceLog(et);
@@ -1792,6 +1789,71 @@ float normalizeAxis(float oldAxisValue, bool isTrigger)
 	return newAxisValue;
 }
 
-//END Pollers
+//TODO: fill this in
+bool isPSX(std::string gamepadName)
+{
+	return false;
+}
 
+void synchControllerDevices(struct cylonStruct& et)
+{
+	//Should not change until next event, but capture now to be safe
+	int numJoysticks = SDL_NumJoysticks();
 
+	//iterate over all SDL_Joysticks via index value
+	for(int i = 0; i < numJoysticks; i++)
+	{
+		//Open SDL_Joystick on that index
+		SDL_Joystick* joystick = SDL_JoystickOpen(i);
+
+		if(!joystick)
+		{
+			//set the error code in the cylonStruct if SDL_Joystick API fails
+			et.error = CONTROLLERS_LIST_ID_SYNCH_ERROR;
+		}
+
+		else
+		{
+			//Grab the instance ID
+			int joystickInstanceID = SDL_JoystickInstanceID(joystick);
+			if (joystickInstanceID < 0)
+			{
+				et.error = CONTROLLERS_LIST_ID_SYNCH_ERROR;
+				return;
+			}
+
+			//For synching controllerIndex in detectedDevices;
+			int controllersIndex = 0;
+
+			//iterate over all controllerStructs
+			for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
+			{
+				if((int)joystickInstanceID == (int)iterator->id)
+				{
+					// set the userIndex (player number) to that of the current joystick
+					iterator->userIndex = i;
+
+					//set the superDevice's controllerIndex to that of the current position in the controllers list, making them synched
+					iterator->superDevice.controllerIndex = controllersIndex;
+
+					//TODO: check what else has its superDevice modified
+
+				}//END if match
+
+				//iterate over all deviceStructs
+				for(list<deviceStruct>::iterator devicerator = et.detectedDevices.begin(), end = et.detectedDevices.end(); devicerator != end; ++devicerator)
+				{
+					//If the device is a controller type device corresponding to the SDL_Joystick with the same instance ID
+					if( ((int) iterator->id == (int)devicerator->id_int) && devicerator->deviceType == CONTROLLER_TYPE)
+					{
+						devicerator->controllerIndex = controllersIndex;
+					}//END if mathc
+				}//END for all deviceStructs
+
+				//increment controllersIndex tracker
+				controllersIndex++;
+			}//END for all controllerStructs
+		}//END if joystick opened correctly
+	}//END for all Joystick index vals
+}//END Synchronize method
+//END Controllers
