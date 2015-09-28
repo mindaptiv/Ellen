@@ -1562,11 +1562,113 @@ void pollControllerEvents(struct cylonStruct& et)
 		else if(event.type == SDL_JOYDEVICEADDED)
 		{
 			cout<<"joystick added"<<endl;
+			//credit to Ryan C Gordon @ libsdl.org for clarification
+			//which for this event == joystick index for added device
+			//which for this event == instance id for the removed
+
+			//Attempt to open controller
+			SDL_Joystick*		joystick 	= SDL_JoystickOpen(event.cdevice.which);
+			bool				existingInstance = false;
+
+			if(SDL_IsGameController(event.jdevice.which))
+			{
+				//already handled via Game Controller Added event
+				return;
+			}
+
+			if(!joystick)
+			{
+				//do nothing for now, open failed
+			}
+			else
+			{
+				//iterate over all controllers and verify
+				for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
+				{
+					//pick the right controller struct
+					if((int)iterator->id == (int)SDL_JoystickInstanceID(joystick))
+					{
+						existingInstance = true;
+					}//END if Id's match
+				}//END iterator
+
+				//if that controller isn't already in our list, add it to our list
+				if(!existingInstance)
+				{
+					//SDL_JoystickInstanceID()
+					deviceStruct device 		= buildControllerDevice(event.jdevice.which, SDL_JoystickNameForIndex(event.jdevice.which), SDL_JoystickInstanceID(joystick));
+					controllerStruct controller = buildController(device, event.jdevice.which, SDL_JoystickInstanceID(joystick));
+
+					//credit to davidgow.net for partial input code
+					controller.thumbLeftX 		= normalizeAxis(SDL_JoystickGetAxis(joystick, SDL_CONTROLLER_AXIS_LEFTX), false);
+					controller.thumbLeftY		= normalizeAxis(SDL_JoystickGetAxis(joystick, SDL_CONTROLLER_AXIS_LEFTY), false);
+					controller.leftTrigger		= normalizeAxis(SDL_JoystickGetAxis(joystick, SDL_CONTROLLER_AXIS_TRIGGERLEFT), true);
+					controller.thumbRightX		= normalizeAxis(SDL_JoystickGetAxis(joystick, SDL_CONTROLLER_AXIS_RIGHTX), false);
+					controller.thumbRightY		= normalizeAxis(SDL_JoystickGetAxis(joystick, SDL_CONTROLLER_AXIS_RIGHTY), false);
+					controller.rightTrigger 	= normalizeAxis(SDL_JoystickGetAxis(joystick, SDL_CONTROLLER_AXIS_TRIGGERRIGHT), true);
+
+					//add to lists for ellen
+					et.controllers.push_back(controller);
+					device.controllerIndex = et.controllers.size() - 1;
+					et.detectedDevices.push_back(device);
+				}//END if new device
+			}//end if open gamePad/joystick successful
+
+			//Now recompute the player indexes
+			if(!existingInstance)
+			{
+				synchControllerDevices(et);
+
+				//TODO: remove this
+				produceLog(et);
+			}
 		}
 
 		else if(event.type == SDL_JOYDEVICEREMOVED)
 		{
-			cout<<"joystick removed"<<endl;
+			cout<<"joystick removed "<<event.jdevice.which<<endl;
+			//which for this event == instance id for the removed
+
+			//iterate over all controllers and find the one to purge
+			for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
+			{
+				//pick the right controller struct
+				if((int)iterator->id == event.jdevice.which)
+				{
+					//Remove the deviceStruct from devices
+					for(list<deviceStruct>::iterator iteratorDevices = et.detectedDevices.begin(), end = et.detectedDevices.end(); iteratorDevices != end; ++iteratorDevices)
+					{
+						//make sure devices have the same name, same type as controllers, and same instance ID
+						if
+						(
+								(iterator->superDevice.id_int == iteratorDevices->id_int) &&
+								(iterator->superDevice.name   == iteratorDevices->name) &&
+								(iterator->superDevice.deviceType == CONTROLLER_TYPE) &&
+								(iteratorDevices->deviceType == CONTROLLER_TYPE)
+						)
+						{
+							et.detectedDevices.erase(iteratorDevices);
+
+							//due to double adding being prevented in JOYSTICKDEVICEADDED events,
+							//we can break now since there should never be two devices with same instance id
+							break;
+						}
+					}
+
+					//Remove the controllerStruct from controllers
+					et.controllers.erase(iterator);
+
+					//due to double adding being prevented in JOYSTICKDEVICEADDED events,
+					//we can break now since there should never be two devices with same instance id
+					break;
+				}//END if need to erase controllerStruct
+			}//END iterator
+
+			//Now recompute the player indexes
+			synchControllerDevices(et);
+
+			//TODO: remove this
+			produceLog(et);
 		}
 
 	}//END WHILE SDL_PollEvent
