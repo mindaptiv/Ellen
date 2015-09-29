@@ -17,15 +17,85 @@ dynLib allLibs[libCount];
 libFunc libsdlFunctions[libsdlCount] =
 {
 		{
-				SDL_NUMJOYSTICKS,
-				NULL
+			SDL_NUMJOYSTICKS,
+			NULL
 		},
 
 		{
-				SDL_ISGAMECONTROLLER,
-				NULL
-		}
-};
+			SDL_ISGAMECONTROLLER,
+			NULL
+		},
+
+		{
+			SDL_JOYSTICKOPEN,
+			NULL
+		},
+
+		{
+			SDL_GAMECONTROLLEROPEN,
+			NULL
+		},
+
+		{
+			SDL_GAMECONTROLLERNAME,
+			NULL
+		},
+
+		{
+			SDL_JOYSTICKINSTANCEID,
+			NULL
+		},
+
+		{
+			SDL_GAMECONTROLLERGETAPPS,
+			NULL
+		},
+
+		{
+			SDL_POLLEVENT,
+			NULL
+		},
+
+		{
+			SDL_GAMECONTROLLERNAMEFORINDEX,
+			NULL
+		},
+
+		{
+			SDL_JOYSTICKNAMEFORINDEX,
+			NULL
+		},
+
+		{
+			SDL_JOYSTICKGETAXIS,
+			NULL
+		},
+
+		{
+			SDL_SETHINT,
+			NULL
+		},
+
+		{
+			SDL_CREATEWINDOW,
+			NULL
+		},
+
+		{
+			SDL_INIT,
+			NULL
+		},
+
+		{
+			SDL_JOYSTICKNAME,
+			NULL
+		},
+
+		{
+			SDL_GL_SETATTRIBUTE,
+			NULL
+		}//END ENTRIES
+}; //END ARRAY
 
 libFunc libusbFunctions[libusbCount] =
 {
@@ -57,10 +127,8 @@ libFunc libusbFunctions[libusbCount] =
 		{
 			LIBUSB_EXIT,
 			NULL
-		},
+		}
 };
-
-
 
 void fillTable()
 {
@@ -396,6 +464,8 @@ void produceDeviceInfo(struct cylonStruct& et)
 
 void produceControllerInfo(struct cylonStruct& et)
 {
+	//TODO: don't call this if SDL didn't open
+
 	//add mappings
 	int mappingsResult = SDL_GameControllerAddMappingsFromFile("./src/Ellen/SDL_GameControllerDB/gamecontrollerdb.txt");
 	if(mappingsResult == -1)
@@ -403,10 +473,15 @@ void produceControllerInfo(struct cylonStruct& et)
 		printf("Warning: device button mappings failed to load from file.");
 	}
 
-
 	//Cast functions
 	SDL_NumJoysticks_t 		_SDL_NumJoysticks 		= (SDL_NumJoysticks_t) allLibs[libsdl].functions[SDL_NumJoysticks_e].funcAddr;
 	SDL_IsGameController_t	_SDL_IsGameController 	= (SDL_IsGameController_t) allLibs[libsdl].functions[SDL_IsGameController_e].funcAddr;
+	SDL_JoystickOpen_t		_SDL_JoystickOpen		= (SDL_JoystickOpen_t) allLibs[libsdl].functions[SDL_JoystickOpen_e].funcAddr;
+	SDL_GameControllerOpen_t _SDL_GameControllerOpen = (SDL_GameControllerOpen_t) allLibs[libsdl].functions[SDL_GameControllerOpen_e].funcAddr;
+	SDL_GameControllerName_t _SDL_GameControllerName = (SDL_GameControllerName_t) allLibs[libsdl].functions[SDL_GameControllerName_e].funcAddr;
+	SDL_JoystickInstanceID_t _SDL_JoystickInstanceID = (SDL_JoystickInstanceID_t) allLibs[libsdl].functions[SDL_JoystickInstanceID_e].funcAddr;
+	SDL_GameControllerGetAxis_t _SDL_GameControllerGetAxis = (SDL_GameControllerGetAxis_t) allLibs[libsdl].functions[SDL_GameControllerGetAxis_e].funcAddr;
+	SDL_JoystickName_t		_SDL_JoystickName		= (SDL_JoystickName_t) allLibs[libsdl].functions[SDL_JoystickName_e].funcAddr;
 
 	//grab gamepad count
 	int gamepadCount = _SDL_NumJoysticks();
@@ -420,7 +495,7 @@ void produceControllerInfo(struct cylonStruct& et)
 	for (int i = 0; i < gamepadCount; i++)
 	{
 		SDL_Joystick* joy;
-		joy = SDL_JoystickOpen(i);
+		joy = _SDL_JoystickOpen(i);
 		if(!joy)
 		{
 			//Retrieval failed, go on to next device
@@ -431,7 +506,7 @@ void produceControllerInfo(struct cylonStruct& et)
 		if(_SDL_IsGameController(i))
 		{
 			//Open controller via index
-			SDL_GameController* sdlPad = SDL_GameControllerOpen(i);
+			SDL_GameController* sdlPad = _SDL_GameControllerOpen(i);
 
 			//Make sure controller open worked
 			if(!sdlPad)
@@ -442,8 +517,8 @@ void produceControllerInfo(struct cylonStruct& et)
 			else
 			{
 				//build structs
-				deviceStruct 	device			= buildControllerDevice(i, SDL_GameControllerName(sdlPad), SDL_JoystickInstanceID(joy));
-				controllerStruct controller 	= buildController(device, i, SDL_JoystickInstanceID(joy));
+				deviceStruct 	device			= buildControllerDevice(i, _SDL_GameControllerName(sdlPad), _SDL_JoystickInstanceID(joy));
+				controllerStruct controller 	= buildController(device, i, _SDL_JoystickInstanceID(joy));
 
 				//handle errors
 				if(device.id_int < 0 || controller.id < 0)
@@ -453,12 +528,12 @@ void produceControllerInfo(struct cylonStruct& et)
 
 
 				//credit to davidgow.net for partial input code
-				controller.thumbLeftX 		= normalizeAxis(SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_LEFTX), false);
-				controller.thumbLeftY		= normalizeAxis(SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_LEFTY), false);
-				controller.leftTrigger		= normalizeAxis(SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_TRIGGERLEFT), true);
-				controller.thumbRightX		= normalizeAxis(SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_RIGHTX), false);
-				controller.thumbRightY		= normalizeAxis(SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_RIGHTY), false);
-				controller.rightTrigger 	= normalizeAxis(SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_TRIGGERRIGHT), true);
+				controller.thumbLeftX 		= normalizeAxis(_SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_LEFTX), false);
+				controller.thumbLeftY		= normalizeAxis(_SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_LEFTY), false);
+				controller.leftTrigger		= normalizeAxis(_SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_TRIGGERLEFT), true);
+				controller.thumbRightX		= normalizeAxis(_SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_RIGHTX), false);
+				controller.thumbRightY		= normalizeAxis(_SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_RIGHTY), false);
+				controller.rightTrigger 	= normalizeAxis(_SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_TRIGGERRIGHT), true);
 
 				//add to lists for ellen
 				et.controllers.push_back(controller);
@@ -471,8 +546,8 @@ void produceControllerInfo(struct cylonStruct& et)
 		else
 		{
 			//Use Joystick class to build device and controller structs
-			deviceStruct		device 		= buildControllerDevice(i, SDL_JoystickName(joy), SDL_JoystickInstanceID(joy));
-			controllerStruct 	controller	= buildController(device, i, SDL_JoystickInstanceID(joy));
+			deviceStruct		device 		= buildControllerDevice(i, _SDL_JoystickName(joy), _SDL_JoystickInstanceID(joy));
+			controllerStruct 	controller	= buildController(device, i, _SDL_JoystickInstanceID(joy));
 
 			//handle errors
 			if(device.id_int < 0 || controller.id < 0)
@@ -1100,8 +1175,28 @@ void pollControllerEvents(struct cylonStruct& et)
 	//Variable Declaration
 	SDL_Event event;
 
+	//Cast functions
+	SDL_PollEvent_t _SDL_PollEvent = (SDL_PollEvent_t) allLibs[libsdl].functions[SDL_PollEvent_e].funcAddr;
+	SDL_GameControllerOpen_t _SDL_GameControllerOpen = (SDL_GameControllerOpen_t) allLibs[libsdl].functions[SDL_GameControllerOpen_e].funcAddr;
+	SDL_JoystickOpen_t		_SDL_JoystickOpen		= (SDL_JoystickOpen_t) allLibs[libsdl].functions[SDL_JoystickOpen_e].funcAddr;
+	SDL_JoystickInstanceID_t _SDL_JoystickInstanceID = (SDL_JoystickInstanceID_t) allLibs[libsdl].functions[SDL_JoystickInstanceID_e].funcAddr;
+	SDL_IsGameController_t	_SDL_IsGameController 	= (SDL_IsGameController_t) allLibs[libsdl].functions[SDL_IsGameController_e].funcAddr;
+	SDL_GameControllerGetAxis_t _SDL_GameControllerGetAxis = (SDL_GameControllerGetAxis_t) allLibs[libsdl].functions[SDL_GameControllerGetAxis_e].funcAddr;
+	SDL_GameControllerNameForIndex_t _SDL_GameControllerNameForIndex = (SDL_GameControllerNameForIndex_t) allLibs[libsdl].functions[SDL_GameControllerNameForIndex_e].funcAddr;
+	SDL_JoystickNameForIndex_t _SDL_JoystickNameForIndex = (SDL_JoystickNameForIndex_t) allLibs[libsdl].functions[SDL_JoystickNameForIndex_e].funcAddr;
+
+
+	/*	SDL_NumJoysticks_t 		_SDL_NumJoysticks 		= (SDL_NumJoysticks_t) allLibs[libsdl].functions[SDL_NumJoysticks_e].funcAddr;
+	SDL_IsGameController_t	_SDL_IsGameController 	= (SDL_IsGameController_t) allLibs[libsdl].functions[SDL_IsGameController_e].funcAddr;
+	SDL_JoystickOpen_t		_SDL_JoystickOpen		= (SDL_JoystickOpen_t) allLibs[libsdl].functions[SDL_JoystickOpen_e].funcAddr;
+	SDL_GameControllerOpen_t _SDL_GameControllerOpen = (SDL_GameControllerOpen_t) allLibs[libsdl].functions[SDL_GameControllerOpen_e].funcAddr;
+	SDL_GameControllerName_t _SDL_GameControllerName = (SDL_GameControllerName_t) allLibs[libsdl].functions[SDL_GameControllerName_e].funcAddr;
+	SDL_JoystickInstanceID_t _SDL_JoystickInstanceID = (SDL_JoystickInstanceID_t) allLibs[libsdl].functions[SDL_JoystickInstanceID_e].funcAddr;
+	SDL_GameControllerGetAxis_t _SDL_GameControllerGetAxis = (SDL_GameControllerGetAxis_t) allLibs[libsdl].functions[SDL_GameControllerGetAxis_e].funcAddr;
+	SDL_JoystickName_t		_SDL_JoystickName		= (SDL_JoystickName_t) allLibs[libsdl].functions[SDL_JoystickName_e].funcAddr;
+*/
 	//while there are events to be handled
-	while(SDL_PollEvent(&event))
+	while(_SDL_PollEvent(&event))
 	{
 	if(event.type == SDL_CONTROLLERBUTTONDOWN)
 		{
@@ -1176,8 +1271,8 @@ void pollControllerEvents(struct cylonStruct& et)
 			//which for removed event == instance id for the removed
 
 			//Attempt to open controller
-			SDL_GameController* gamePad 	= SDL_GameControllerOpen(event.cdevice.which);
-			SDL_Joystick*		joystick 	= SDL_JoystickOpen(event.cdevice.which);
+			SDL_GameController* gamePad 	= _SDL_GameControllerOpen(event.cdevice.which);
+			SDL_Joystick*		joystick 	= _SDL_JoystickOpen(event.cdevice.which);
 			bool				existingInstance = false;
 
 			if(!gamePad || !joystick)
@@ -1190,7 +1285,7 @@ void pollControllerEvents(struct cylonStruct& et)
 				for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 				{
 					//pick the right controller struct
-					if((int)iterator->id == (int)SDL_JoystickInstanceID(joystick))
+					if((int)iterator->id == (int)_SDL_JoystickInstanceID(joystick))
 					{
 						existingInstance = true;
 					}//END if Id's match
@@ -1200,16 +1295,16 @@ void pollControllerEvents(struct cylonStruct& et)
 				if(!existingInstance)
 				{
 					//SDL_JoystickInstanceID()
-					deviceStruct device 		= buildControllerDevice(event.cdevice.which, SDL_GameControllerNameForIndex(event.cdevice.which), SDL_JoystickInstanceID(joystick));
-					controllerStruct controller = buildController(device, event.cdevice.which, SDL_JoystickInstanceID(joystick));
+					deviceStruct device 		= buildControllerDevice(event.cdevice.which, _SDL_GameControllerNameForIndex(event.cdevice.which), _SDL_JoystickInstanceID(joystick));
+					controllerStruct controller = buildController(device, event.cdevice.which, _SDL_JoystickInstanceID(joystick));
 
 					//credit to davidgow.net for partial input code
-					controller.thumbLeftX 		= normalizeAxis(SDL_GameControllerGetAxis(gamePad, SDL_CONTROLLER_AXIS_LEFTX), false);
-					controller.thumbLeftY		= normalizeAxis(SDL_GameControllerGetAxis(gamePad, SDL_CONTROLLER_AXIS_LEFTY), false);
-					controller.leftTrigger		= normalizeAxis(SDL_GameControllerGetAxis(gamePad, SDL_CONTROLLER_AXIS_TRIGGERLEFT), true);
-					controller.thumbRightX		= normalizeAxis(SDL_GameControllerGetAxis(gamePad, SDL_CONTROLLER_AXIS_RIGHTX), false);
-					controller.thumbRightY		= normalizeAxis(SDL_GameControllerGetAxis(gamePad, SDL_CONTROLLER_AXIS_RIGHTY), false);
-					controller.rightTrigger 	= normalizeAxis(SDL_GameControllerGetAxis(gamePad, SDL_CONTROLLER_AXIS_TRIGGERRIGHT), true);
+					controller.thumbLeftX 		= normalizeAxis(_SDL_GameControllerGetAxis(gamePad, SDL_CONTROLLER_AXIS_LEFTX), false);
+					controller.thumbLeftY		= normalizeAxis(_SDL_GameControllerGetAxis(gamePad, SDL_CONTROLLER_AXIS_LEFTY), false);
+					controller.leftTrigger		= normalizeAxis(_SDL_GameControllerGetAxis(gamePad, SDL_CONTROLLER_AXIS_TRIGGERLEFT), true);
+					controller.thumbRightX		= normalizeAxis(_SDL_GameControllerGetAxis(gamePad, SDL_CONTROLLER_AXIS_RIGHTX), false);
+					controller.thumbRightY		= normalizeAxis(_SDL_GameControllerGetAxis(gamePad, SDL_CONTROLLER_AXIS_RIGHTY), false);
+					controller.rightTrigger 	= normalizeAxis(_SDL_GameControllerGetAxis(gamePad, SDL_CONTROLLER_AXIS_TRIGGERRIGHT), true);
 
 					//add to lists for ellen
 					et.controllers.push_back(controller);
@@ -1289,7 +1384,7 @@ void pollControllerEvents(struct cylonStruct& et)
 				for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 				{
 					//pick the right controller struct
-					if((event.jbutton.which == (int)iterator->id) && !SDL_IsGameController(event.jbutton.which))
+					if((event.jbutton.which == (int)iterator->id) && !_SDL_IsGameController(event.jbutton.which))
 					{
 						//NOTE: not standardized therefore not 100% reliable
 						iterator->buttons = pollButtons(iterator->buttons, event, false);
@@ -1324,7 +1419,7 @@ void pollControllerEvents(struct cylonStruct& et)
 				for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 				{
 					//TODO: only search for TODO dont use list incase if you typed like TODOR
-					if((event.jbutton.which == (int)iterator->id) && !SDL_IsGameController(event.jbutton.which))
+					if((event.jbutton.which == (int)iterator->id) && !_SDL_IsGameController(event.jbutton.which))
 					{
 						//NOTE: not standardized therefore not 100% reliable
 						iterator->buttons = pollButtons(iterator->buttons, event, false);
@@ -1357,7 +1452,7 @@ void pollControllerEvents(struct cylonStruct& et)
 			for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 			{
 				//select the right controllerStruct
-				if((event.jaxis.which == (int)iterator->id) && !SDL_IsGameController(event.jaxis.which))
+				if((event.jaxis.which == (int)iterator->id) && !_SDL_IsGameController(event.jaxis.which))
 				{
 					//USE tested/assumed playstation axis mapping
 					/*
@@ -1433,7 +1528,7 @@ void pollControllerEvents(struct cylonStruct& et)
 			for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 			{
 				//if the controller ID's match
-				if((event.jhat.which == (int)iterator->id) && !SDL_IsGameController(event.jaxis.which))
+				if((event.jhat.which == (int)iterator->id) && !_SDL_IsGameController(event.jaxis.which))
 				{
 					if(event.jhat.value== SDL_HAT_LEFTUP)
 					{
@@ -1522,10 +1617,10 @@ void pollControllerEvents(struct cylonStruct& et)
 			//which for this event == instance id for the removed
 
 			//Attempt to open controller
-			SDL_Joystick*		joystick 	= SDL_JoystickOpen(event.cdevice.which);
+			SDL_Joystick*		joystick 	= _SDL_JoystickOpen(event.cdevice.which);
 			bool				existingInstance = false;
 
-			if(SDL_IsGameController(event.jdevice.which))
+			if(_SDL_IsGameController(event.jdevice.which))
 			{
 				//already handled via Game Controller Added event
 				return;
@@ -1541,7 +1636,7 @@ void pollControllerEvents(struct cylonStruct& et)
 				for(list<controllerStruct>::iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
 				{
 					//pick the right controller struct
-					if((int)iterator->id == (int)SDL_JoystickInstanceID(joystick))
+					if((int)iterator->id == (int)_SDL_JoystickInstanceID(joystick))
 					{
 						existingInstance = true;
 					}//END if Id's match
@@ -1551,8 +1646,8 @@ void pollControllerEvents(struct cylonStruct& et)
 				if(!existingInstance)
 				{
 					//SDL_JoystickInstanceID()
-					deviceStruct device 		= buildControllerDevice(event.jdevice.which, SDL_JoystickNameForIndex(event.jdevice.which), SDL_JoystickInstanceID(joystick));
-					controllerStruct controller = buildController(device, event.jdevice.which, SDL_JoystickInstanceID(joystick));
+					deviceStruct device 		= buildControllerDevice(event.jdevice.which, _SDL_JoystickNameForIndex(event.jdevice.which), _SDL_JoystickInstanceID(joystick));
+					controllerStruct controller = buildController(device, event.jdevice.which, _SDL_JoystickInstanceID(joystick));
 
 					//credit to davidgow.net for partial input code
 					controller.thumbLeftX 		= normalizeAxis(SDL_JoystickGetAxis(joystick, SDL_CONTROLLER_AXIS_LEFTX), false);

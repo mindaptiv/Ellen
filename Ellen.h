@@ -61,8 +61,22 @@ typedef int 	(*libusb_get_device_descriptor_t)(libusb_device* device, libusb_dev
 typedef int 	(*libusb_get_active_config_descriptor_t)(libusb_device* device, libusb_config_descriptor** config);
 
 //SDL function types
-typedef SDL_bool 	(*SDL_IsGameController_t)(int joystick_index);
-typedef int 		(*SDL_NumJoysticks_t)(void);
+typedef SDL_bool 			(*SDL_IsGameController_t)(int joystick_index);
+typedef int 				(*SDL_NumJoysticks_t)(void);
+typedef SDL_Joystick* 		(*SDL_JoystickOpen_t)(int device_index);
+typedef SDL_GameController* (*SDL_GameControllerOpen_t)(int joystick_index);
+typedef const char*			(*SDL_GameControllerName_t)(SDL_GameController* gamecontroller);
+typedef SDL_JoystickID		(*SDL_JoystickInstanceID_t)(SDL_Joystick* joystick);
+typedef Sint16				(*SDL_GameControllerGetAxis_t)(SDL_GameController* gamecontroller, SDL_GameControllerAxis axis);
+typedef int					(*SDL_PollEvent_t)(SDL_Event* event);
+typedef const char*			(*SDL_GameControllerNameForIndex_t)(int joystick_index);
+typedef const char*			(*SDL_JoystickNameForIndex_t)(int device_index);
+typedef Sint16				(*SDL_JoystickGetAxis_t)(SDL_Joystick* joystick, int axis);
+typedef SDL_bool			(*SDL_SetHint_t)(const char* name, const char* value);
+typedef SDL_Window*			(*SDL_CreateWindow_t)(const char* title, int x, int y, int w, int h, Uint32 flags);
+typedef	int					(*SDL_Init_t)(Uint32 flags);
+typedef int					(*SDL_GL_SetAttribute_t)(SDL_GLattr attr, int value);
+typedef const char*			(*SDL_JoystickName_t)(SDL_Joystick* joystick);
 
 //Constants
 //path to profile image
@@ -90,8 +104,20 @@ static const int LIBSDL_LATEST_VERSION					= 0;
 static const char* LIBSDL_LIB_NAME						= "libSDL2-2.0.so.0.2.0";
 static const char* SDL_NUMJOYSTICKS						= "SDL_NumJoysticks";
 static const char* SDL_ISGAMECONTROLLER					= "SDL_IsGameController";
-
-//static const char*
+static const char* SDL_JOYSTICKOPEN						= "SDL_JoystickOpen";
+static const char* SDL_GAMECONTROLLEROPEN				= "SDL_GameControllerOpen";
+static const char* SDL_GAMECONTROLLERNAME				= "SDL_GameControllerName";
+static const char* SDL_JOYSTICKINSTANCEID				= "SDL_JoystickInstanceID";
+static const char* SDL_GAMECONTROLLERGETAPPS			= "SDL_GameControllerGetAxis";
+static const char* SDL_POLLEVENT						= "SDL_PollEvent";
+static const char* SDL_GAMECONTROLLERNAMEFORINDEX		= "SDL_GameControllerNameForIndex";
+static const char* SDL_JOYSTICKNAMEFORINDEX				= "SDL_JoystickNameForIndex";
+static const char* SDL_JOYSTICKGETAXIS					= "SDL_JoystickGetAxis";
+static const char* SDL_SETHINT							= "SDL_SetHint";
+static const char* SDL_CREATEWINDOW						= "SDL_CreateWindow";
+static const char* SDL_INIT								= "SDL_Init";
+static const char* SDL_GL_SETATTRIBUTE					= "SDL_GL_SetAttribute";
+static const char* SDL_JOYSTICKNAME						= "SDL_JoystickName";
 
 //Structs
 //Function loaded from library
@@ -114,7 +140,6 @@ struct dynLib
 
 enum libraries
 {
-//	libusb,
 	libsdl,
 	libusb,
 	libCount
@@ -135,6 +160,20 @@ enum sdlFunctions
 {
 	SDL_NumJoysticks_e,
 	SDL_IsGameController_e,
+	SDL_JoystickOpen_e,
+	SDL_GameControllerOpen_e,
+	SDL_GameControllerName_e,
+	SDL_JoystickInstanceID_e,
+	SDL_GameControllerGetAxis_e,
+	SDL_PollEvent_e,
+	SDL_GameControllerNameForIndex_e,
+	SDL_JoystickNameForIndex_e,
+	SDL_JoystickGetAxis_e,
+	SDL_SetHint_e,
+	SDL_CreateWindow_e,
+	SDL_Init_e,
+	SDL_JoystickName_e,
+	SDL_GL_SetAttribute_e,
 	libsdlCount
 };
 //END structs
