@@ -128,6 +128,7 @@ static const int FLIPPED_PORTRAIT  = 8;
 
 //error codes
 static const int CONTROLLERS_LIST_ID_SYNCH_ERROR = 1; //failed to correctly synchronize data between the controllers and detectedDevices lists
+static const int INVALID_CONTROLLER_ID = 2; //failed to correctly get the ID of a controller device
 
 //support structure for cylonStruct for holding the properties of a given device in a single struct
 struct deviceStruct

@@ -396,17 +396,13 @@ void produceDeviceInfo(struct cylonStruct& et)
 
 void produceControllerInfo(struct cylonStruct& et)
 {
-	//TODO: cleanup
-	//int result = SDL_Init(SDL_INIT_GAMECONTROLLER | SDL_INIT_JOYSTICK);
-	/*if (result < 0)
-	{
-
-		cout<<"I told them it means peace among worlds!"<<endl;
-		return;
-	}
-*/
 	//add mappings
-	SDL_GameControllerAddMappingsFromFile("./src/Ellen/SDL_GameControllerDB/gamecontrollerdb.txt");
+	int mappingsResult = SDL_GameControllerAddMappingsFromFile("./src/Ellen/SDL_GameControllerDB/gamecontrollerdb.txt");
+	if(mappingsResult == -1)
+	{
+		printf("Warning: device button mappings failed to load from file.");
+	}
+
 
 	//Cast functions
 	SDL_NumJoysticks_t 		_SDL_NumJoysticks 		= (SDL_NumJoysticks_t) allLibs[libsdl].functions[SDL_NumJoysticks_e].funcAddr;
@@ -414,6 +410,11 @@ void produceControllerInfo(struct cylonStruct& et)
 
 	//grab gamepad count
 	int gamepadCount = _SDL_NumJoysticks();
+	if(gamepadCount <= 0)
+	{
+		//error or no controllers
+		return;
+	}
 
 	//Credit to SDL Wiki for partial method code
 	for (int i = 0; i < gamepadCount; i++)
@@ -442,7 +443,14 @@ void produceControllerInfo(struct cylonStruct& et)
 			{
 				//build structs
 				deviceStruct 	device			= buildControllerDevice(i, SDL_GameControllerName(sdlPad), SDL_JoystickInstanceID(joy));
-				controllerStruct controller 		= buildController(device, i, SDL_JoystickInstanceID(joy));
+				controllerStruct controller 	= buildController(device, i, SDL_JoystickInstanceID(joy));
+
+				//handle errors
+				if(device.id_int < 0 || controller.id < 0)
+				{
+					et.error |= INVALID_CONTROLLER_ID;
+				}
+
 
 				//credit to davidgow.net for partial input code
 				controller.thumbLeftX 		= normalizeAxis(SDL_GameControllerGetAxis(sdlPad, SDL_CONTROLLER_AXIS_LEFTX), false);
@@ -465,6 +473,12 @@ void produceControllerInfo(struct cylonStruct& et)
 			//Use Joystick class to build device and controller structs
 			deviceStruct		device 		= buildControllerDevice(i, SDL_JoystickName(joy), SDL_JoystickInstanceID(joy));
 			controllerStruct 	controller	= buildController(device, i, SDL_JoystickInstanceID(joy));
+
+			//handle errors
+			if(device.id_int < 0 || controller.id < 0)
+			{
+				et.error |= INVALID_CONTROLLER_ID;
+			}
 
 			//add to lists for ellen
 			et.controllers.push_back(controller);
@@ -665,7 +679,7 @@ void produceLog(struct cylonStruct& et)
 	cout<<"Allocation Granularity: "<<et.allocationGranularity<<endl;
 	cout<<"Min/Max App Address: "<<et.minAppAddress<<"/"<<et.maxAppAddress<<endl;
 	cout<<"Detected Device Count: "<<et.detectedDeviceCount<<endl;
-	cout<<"Error: "<<et.error<<endl;
+	cout<<"Error: "<<hex<<et.error<<dec<<endl;
 	cout<<"Devices: "<<endl;
 */
 	//credit to kmpofighter @ cplusplus.com for partial method code
@@ -1158,9 +1172,8 @@ void pollControllerEvents(struct cylonStruct& et)
 		else if(event.type == SDL_CONTROLLERDEVICEADDED)
 		{
 			//credit to Ryan C Gordon @ libsdl.org for clarification
-			//which for this event == joystick index for added device
-			//which for this event == instance id for the removed
-			cout<<"controller added"<<endl;
+			//which for added event == joystick index for added device
+			//which for removed event == instance id for the removed
 
 			//Attempt to open controller
 			SDL_GameController* gamePad 	= SDL_GameControllerOpen(event.cdevice.which);
@@ -1868,6 +1881,10 @@ void synchControllerDevices(struct cylonStruct& et)
 {
 	//Should not change until next event, but capture now to be safe
 	int numJoysticks = SDL_NumJoysticks();
+	if (numJoysticks < 0 )
+	{
+		et.error |= CONTROLLERS_LIST_ID_SYNCH_ERROR;
+	}
 
 	//iterate over all SDL_Joysticks via index value
 	for(int i = 0; i < numJoysticks; i++)
@@ -1878,7 +1895,7 @@ void synchControllerDevices(struct cylonStruct& et)
 		if(!joystick)
 		{
 			//set the error code in the cylonStruct if SDL_Joystick API fails
-			et.error = CONTROLLERS_LIST_ID_SYNCH_ERROR;
+			et.error|= CONTROLLERS_LIST_ID_SYNCH_ERROR;
 		}
 
 		else
@@ -1887,7 +1904,7 @@ void synchControllerDevices(struct cylonStruct& et)
 			int joystickInstanceID = SDL_JoystickInstanceID(joystick);
 			if (joystickInstanceID < 0)
 			{
-				et.error = CONTROLLERS_LIST_ID_SYNCH_ERROR;
+				et.error |= CONTROLLERS_LIST_ID_SYNCH_ERROR;
 				return;
 			}
 
