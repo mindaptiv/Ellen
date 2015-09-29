@@ -1286,26 +1286,7 @@ void pollControllerEvents(struct cylonStruct& et)
 						 * LT => button == 8
 						 * RT => button == 9
 						 */
-						if(		(iterator->superDevice.name.find("Playstation") != std::string::npos)||
-								(iterator->superDevice.name.find("PlayStation") != std::string::npos)||
-								(iterator->superDevice.name.find("playstation") != std::string::npos)||
-								(iterator->superDevice.name.find("Play Station") != std::string::npos)||
-								(iterator->superDevice.name.find("play station") != std::string::npos)||
-								(iterator->superDevice.name.find("PS1") != std::string::npos)||
-								(iterator->superDevice.name.find("PSX") != std::string::npos)||
-								(iterator->superDevice.name.find("PS2") != std::string::npos)||
-								(iterator->superDevice.name.find("PS3") != std::string::npos)||
-								(iterator->superDevice.name.find("Dualshock") != std::string::npos)||
-								(iterator->superDevice.name.find("Dual Shock") != std::string::npos)||
-								(iterator->superDevice.name.find("DualShock") != std::string::npos)||
-								(iterator->superDevice.name.find("Sony") != std::string::npos)||
-								(iterator->superDevice.name.find("sony") != std::string::npos)||
-								(iterator->superDevice.name.find("Sixaxis") != std::string::npos)||
-								(iterator->superDevice.name.find("SixAxis") != std::string::npos)||
-								(iterator->superDevice.name.find("sixaxis") != std::string::npos)||
-								(iterator->superDevice.name.find("Six Axis") != std::string::npos)||
-								(iterator->superDevice.name.find("six axis")!= std::string::npos)
-						)
+						if(isPSX(iterator->superDevice.name))
 						{
 							if(event.jbutton.button == 8)
 							{
@@ -1340,26 +1321,7 @@ void pollControllerEvents(struct cylonStruct& et)
 						 * LT => button == 8
 						 * RT => button == 9
 						 */
-						if(		(iterator->superDevice.name.find("Playstation") != std::string::npos)||
-								(iterator->superDevice.name.find("PlayStation") != std::string::npos)||
-								(iterator->superDevice.name.find("playstation") != std::string::npos)||
-								(iterator->superDevice.name.find("Play Station") != std::string::npos)||
-								(iterator->superDevice.name.find("play station") != std::string::npos)||
-								(iterator->superDevice.name.find("PS1") != std::string::npos)||
-								(iterator->superDevice.name.find("PSX") != std::string::npos)||
-								(iterator->superDevice.name.find("PS2") != std::string::npos)||
-								(iterator->superDevice.name.find("PS3") != std::string::npos)||
-								(iterator->superDevice.name.find("Dualshock") != std::string::npos)||
-								(iterator->superDevice.name.find("Dual Shock") != std::string::npos)||
-								(iterator->superDevice.name.find("DualShock") != std::string::npos)||
-								(iterator->superDevice.name.find("Sony") != std::string::npos)||
-								(iterator->superDevice.name.find("sony") != std::string::npos)||
-								(iterator->superDevice.name.find("Sixaxis") != std::string::npos)||
-								(iterator->superDevice.name.find("SixAxis") != std::string::npos)||
-								(iterator->superDevice.name.find("sixaxis") != std::string::npos)||
-								(iterator->superDevice.name.find("Six Axis") != std::string::npos)||
-								(iterator->superDevice.name.find("six axis")!= std::string::npos)
-						)
+						if(isPSX(iterator->superDevice.name))
 						{
 							if(event.jbutton.button == 8)
 							{
@@ -1391,27 +1353,7 @@ void pollControllerEvents(struct cylonStruct& et)
 					 * RX == 3
 					 * RY == 2
 					 */
-					//TODO: replace this if statement with a function
-					if(		(iterator->superDevice.name.find("Playstation") != std::string::npos)||
-							(iterator->superDevice.name.find("PlayStation") != std::string::npos)||
-							(iterator->superDevice.name.find("playstation") != std::string::npos)||
-							(iterator->superDevice.name.find("Play Station") != std::string::npos)||
-							(iterator->superDevice.name.find("play station") != std::string::npos)||
-							(iterator->superDevice.name.find("PS1") != std::string::npos)||
-							(iterator->superDevice.name.find("PSX") != std::string::npos)||
-							(iterator->superDevice.name.find("PS2") != std::string::npos)||
-							(iterator->superDevice.name.find("PS3") != std::string::npos)||
-							(iterator->superDevice.name.find("Dualshock") != std::string::npos)||
-							(iterator->superDevice.name.find("Dual Shock") != std::string::npos)||
-							(iterator->superDevice.name.find("DualShock") != std::string::npos)||
-							(iterator->superDevice.name.find("Sony") != std::string::npos)||
-							(iterator->superDevice.name.find("sony") != std::string::npos)||
-							(iterator->superDevice.name.find("Sixaxis") != std::string::npos)||
-							(iterator->superDevice.name.find("SixAxis") != std::string::npos)||
-							(iterator->superDevice.name.find("sixaxis") != std::string::npos)||
-							(iterator->superDevice.name.find("Six Axis") != std::string::npos)||
-							(iterator->superDevice.name.find("six axis")!= std::string::npos)
-					)
+					if(isPSX(iterator->superDevice.name))
 					{
 						if(event.jaxis.axis == 0)
 						{
@@ -1891,11 +1833,37 @@ float normalizeAxis(float oldAxisValue, bool isTrigger)
 	return newAxisValue;
 }
 
-//TODO: fill this in
+//quick hacky check if a device is a playstation device
 bool isPSX(std::string gamepadName)
 {
+	if(
+		(gamepadName.find("Playstation") != std::string::npos)||
+		(gamepadName.find("PlayStation") != std::string::npos)||
+		(gamepadName.find("playstation") != std::string::npos)||
+		(gamepadName.find("Play Station") != std::string::npos)||
+		(gamepadName.find("play station") != std::string::npos)||
+		(gamepadName.find("PS1") != std::string::npos)||
+		(gamepadName.find("PSX") != std::string::npos)||
+		(gamepadName.find("PS2") != std::string::npos)||
+		(gamepadName.find("PS3") != std::string::npos)||
+		(gamepadName.find("Dualshock") != std::string::npos)||
+		(gamepadName.find("Dual Shock") != std::string::npos)||
+		(gamepadName.find("DualShock") != std::string::npos)||
+		(gamepadName.find("Sony") != std::string::npos)||
+		(gamepadName.find("sony") != std::string::npos)||
+		(gamepadName.find("Sixaxis") != std::string::npos)||
+		(gamepadName.find("SixAxis") != std::string::npos)||
+		(gamepadName.find("sixaxis") != std::string::npos)||
+		(gamepadName.find("Six Axis") != std::string::npos)||
+		(gamepadName.find("six axis")!= std::string::npos) ||
+		(gamepadName.find("PLAYSTATION") != std::string::npos)
+	)//END IF
+	{
+		return true;
+	}//end set true
+
 	return false;
-}
+}//END method
 
 void synchControllerDevices(struct cylonStruct& et)
 {
@@ -1949,7 +1917,7 @@ void synchControllerDevices(struct cylonStruct& et)
 					if( ((int) iterator->id == (int)devicerator->id_int) && devicerator->deviceType == CONTROLLER_TYPE)
 					{
 						devicerator->controllerIndex = controllersIndex;
-					}//END if mathc
+					}//END if match
 				}//END for all deviceStructs
 
 				//increment controllersIndex tracker
