@@ -1949,16 +1949,28 @@ void sdlInit()
 	SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
 
 	//Initialize the subsystems
-	SDL_Init(SDL_INIT_EVERYTHING);
+	int result = SDL_Init(SDL_INIT_EVERYTHING);
+	if(result < 0)
+	{
+		//init failed
+		printf("Warning: SDL Init failed");
+		return;
+	}
 
 	//openGL settings
-	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	result = SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	if(result < 0)
+	{
+		//init failed
+		printf("Warning: SDL GL failed");
+		return;
+	}
 
 	//Create the hidden window
 	SDL_Window* sdlWindow = SDL_CreateWindow("test", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 100, 100, SDL_WINDOW_HIDDEN);
 	if(sdlWindow == NULL)
 	{
-		printf("Oh shit no window bro");
+		printf("Warning: no SDL Window created");
 	}//END if no window
 }//END method
 //END Controllers
