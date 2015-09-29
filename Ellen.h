@@ -168,6 +168,7 @@ struct controllerStruct buildBlankController();
 struct controllerStruct buildController(deviceStruct device, int index, int id);
 
 //Controller methods
+void sdlInit();
 void pollControllerEvents(struct cylonStruct& et);
 uint16_t pollButtons(uint16_t buttons, SDL_Event event, bool isGameController);
 float normalizeAxis(float oldAxisValue, bool isTrigger);

@@ -1643,7 +1643,6 @@ uint16_t pollButtons(uint16_t buttons, SDL_Event event, bool isGameController)
 		state	= event.jbutton.state;
 	}
 
-
 	if(button == SDL_CONTROLLER_BUTTON_A)
 	{
 		if(state == SDL_PRESSED)
@@ -1926,4 +1925,23 @@ void synchControllerDevices(struct cylonStruct& et)
 		}//END if joystick opened correctly
 	}//END for all Joystick index vals
 }//END Synchronize method
+
+void sdlInit()
+{
+	//Allow background events (since we're not actually using an SDL window), in my demo runs I piggy back off of an openGL window
+	SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
+
+	//Initialize the subsystems
+	SDL_Init(SDL_INIT_EVERYTHING);
+
+	//openGL settings
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+	//Create the hidden window
+	SDL_Window* sdlWindow = SDL_CreateWindow("test", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 100, 100, SDL_WINDOW_HIDDEN);
+	if(sdlWindow == NULL)
+	{
+		printf("Oh shit no window bro");
+	}//END if no window
+}//END method
 //END Controllers
