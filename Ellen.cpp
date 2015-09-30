@@ -795,10 +795,10 @@ struct cylonStruct buildEllen()
 	struct cylonStruct ellen;
 
 	//fill table
-	fillTable();
+	//fillTable();
 
 	//open libs
-	openLibs();
+	//openLibs();
 
 	//producers
 	produceUserProfile(ellen);
@@ -808,9 +808,6 @@ struct cylonStruct buildEllen()
 	produceMemoryInfo(ellen);
 	produceDeviceInfo(ellen);
 	produceLog(ellen);
-
-	//close libs
-	//closeLibs();
 
 	//return
 	return ellen;
@@ -1184,17 +1181,8 @@ void pollControllerEvents(struct cylonStruct& et)
 	SDL_GameControllerGetAxis_t _SDL_GameControllerGetAxis = (SDL_GameControllerGetAxis_t) allLibs[libsdl].functions[SDL_GameControllerGetAxis_e].funcAddr;
 	SDL_GameControllerNameForIndex_t _SDL_GameControllerNameForIndex = (SDL_GameControllerNameForIndex_t) allLibs[libsdl].functions[SDL_GameControllerNameForIndex_e].funcAddr;
 	SDL_JoystickNameForIndex_t _SDL_JoystickNameForIndex = (SDL_JoystickNameForIndex_t) allLibs[libsdl].functions[SDL_JoystickNameForIndex_e].funcAddr;
+	SDL_JoystickGetAxis_t	_SDL_JoystickGetAxis = (SDL_JoystickGetAxis_t) allLibs[libsdl].functions[SDL_JoystickGetAxis_e].funcAddr;
 
-
-	/*	SDL_NumJoysticks_t 		_SDL_NumJoysticks 		= (SDL_NumJoysticks_t) allLibs[libsdl].functions[SDL_NumJoysticks_e].funcAddr;
-	SDL_IsGameController_t	_SDL_IsGameController 	= (SDL_IsGameController_t) allLibs[libsdl].functions[SDL_IsGameController_e].funcAddr;
-	SDL_JoystickOpen_t		_SDL_JoystickOpen		= (SDL_JoystickOpen_t) allLibs[libsdl].functions[SDL_JoystickOpen_e].funcAddr;
-	SDL_GameControllerOpen_t _SDL_GameControllerOpen = (SDL_GameControllerOpen_t) allLibs[libsdl].functions[SDL_GameControllerOpen_e].funcAddr;
-	SDL_GameControllerName_t _SDL_GameControllerName = (SDL_GameControllerName_t) allLibs[libsdl].functions[SDL_GameControllerName_e].funcAddr;
-	SDL_JoystickInstanceID_t _SDL_JoystickInstanceID = (SDL_JoystickInstanceID_t) allLibs[libsdl].functions[SDL_JoystickInstanceID_e].funcAddr;
-	SDL_GameControllerGetAxis_t _SDL_GameControllerGetAxis = (SDL_GameControllerGetAxis_t) allLibs[libsdl].functions[SDL_GameControllerGetAxis_e].funcAddr;
-	SDL_JoystickName_t		_SDL_JoystickName		= (SDL_JoystickName_t) allLibs[libsdl].functions[SDL_JoystickName_e].funcAddr;
-*/
 	//while there are events to be handled
 	while(_SDL_PollEvent(&event))
 	{
@@ -1650,12 +1638,12 @@ void pollControllerEvents(struct cylonStruct& et)
 					controllerStruct controller = buildController(device, event.jdevice.which, _SDL_JoystickInstanceID(joystick));
 
 					//credit to davidgow.net for partial input code
-					controller.thumbLeftX 		= normalizeAxis(SDL_JoystickGetAxis(joystick, SDL_CONTROLLER_AXIS_LEFTX), false);
-					controller.thumbLeftY		= normalizeAxis(SDL_JoystickGetAxis(joystick, SDL_CONTROLLER_AXIS_LEFTY), false);
-					controller.leftTrigger		= normalizeAxis(SDL_JoystickGetAxis(joystick, SDL_CONTROLLER_AXIS_TRIGGERLEFT), true);
-					controller.thumbRightX		= normalizeAxis(SDL_JoystickGetAxis(joystick, SDL_CONTROLLER_AXIS_RIGHTX), false);
-					controller.thumbRightY		= normalizeAxis(SDL_JoystickGetAxis(joystick, SDL_CONTROLLER_AXIS_RIGHTY), false);
-					controller.rightTrigger 	= normalizeAxis(SDL_JoystickGetAxis(joystick, SDL_CONTROLLER_AXIS_TRIGGERRIGHT), true);
+					controller.thumbLeftX 		= normalizeAxis(_SDL_JoystickGetAxis(joystick, SDL_CONTROLLER_AXIS_LEFTX), false);
+					controller.thumbLeftY		= normalizeAxis(_SDL_JoystickGetAxis(joystick, SDL_CONTROLLER_AXIS_LEFTY), false);
+					controller.leftTrigger		= normalizeAxis(_SDL_JoystickGetAxis(joystick, SDL_CONTROLLER_AXIS_TRIGGERLEFT), true);
+					controller.thumbRightX		= normalizeAxis(_SDL_JoystickGetAxis(joystick, SDL_CONTROLLER_AXIS_RIGHTX), false);
+					controller.thumbRightY		= normalizeAxis(_SDL_JoystickGetAxis(joystick, SDL_CONTROLLER_AXIS_RIGHTY), false);
+					controller.rightTrigger 	= normalizeAxis(_SDL_JoystickGetAxis(joystick, SDL_CONTROLLER_AXIS_TRIGGERRIGHT), true);
 
 					//add to lists for ellen
 					et.controllers.push_back(controller);
@@ -1974,8 +1962,13 @@ bool isPSX(std::string gamepadName)
 
 void synchControllerDevices(struct cylonStruct& et)
 {
+	//Cast functions
+	SDL_NumJoysticks_t 		_SDL_NumJoysticks 		= (SDL_NumJoysticks_t) allLibs[libsdl].functions[SDL_NumJoysticks_e].funcAddr;
+	SDL_JoystickOpen_t		_SDL_JoystickOpen		= (SDL_JoystickOpen_t) allLibs[libsdl].functions[SDL_JoystickOpen_e].funcAddr;
+	SDL_JoystickInstanceID_t _SDL_JoystickInstanceID = (SDL_JoystickInstanceID_t) allLibs[libsdl].functions[SDL_JoystickInstanceID_e].funcAddr;
+
 	//Should not change until next event, but capture now to be safe
-	int numJoysticks = SDL_NumJoysticks();
+	int numJoysticks = _SDL_NumJoysticks();
 	if (numJoysticks < 0 )
 	{
 		et.error |= CONTROLLERS_LIST_ID_SYNCH_ERROR;
@@ -1985,7 +1978,7 @@ void synchControllerDevices(struct cylonStruct& et)
 	for(int i = 0; i < numJoysticks; i++)
 	{
 		//Open SDL_Joystick on that index
-		SDL_Joystick* joystick = SDL_JoystickOpen(i);
+		SDL_Joystick* joystick = _SDL_JoystickOpen(i);
 
 		if(!joystick)
 		{
@@ -1996,7 +1989,7 @@ void synchControllerDevices(struct cylonStruct& et)
 		else
 		{
 			//Grab the instance ID
-			int joystickInstanceID = SDL_JoystickInstanceID(joystick);
+			int joystickInstanceID = _SDL_JoystickInstanceID(joystick);
 			if (joystickInstanceID < 0)
 			{
 				et.error |= CONTROLLERS_LIST_ID_SYNCH_ERROR;
@@ -2040,11 +2033,17 @@ void synchControllerDevices(struct cylonStruct& et)
 
 void sdlInit()
 {
+	//Cast functions
+	SDL_SetHint_t _SDL_SetHint = (SDL_SetHint_t) allLibs[libsdl].functions[SDL_SetHint_e].funcAddr;
+	SDL_Init_t _SDL_Init = (SDL_Init_t) allLibs[libsdl].functions[SDL_Init_e].funcAddr;
+	SDL_GL_SetAttribute_t _SDL_GL_SetAttribute = (SDL_GL_SetAttribute_t) allLibs[libsdl].functions[SDL_GL_SetAttribute_e].funcAddr;
+	SDL_CreateWindow_t _SDL_CreateWindow = (SDL_CreateWindow_t) allLibs[libsdl].functions[SDL_CreateWindow_e].funcAddr;
+
 	//Allow background events (since we're not actually using an SDL window), in my demo runs I piggy back off of an openGL window
-	SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
+	_SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
 
 	//Initialize the subsystems
-	int result = SDL_Init(SDL_INIT_EVERYTHING);
+	int result = _SDL_Init(SDL_INIT_EVERYTHING);
 	if(result < 0)
 	{
 		//init failed
@@ -2053,7 +2052,7 @@ void sdlInit()
 	}
 
 	//openGL settings
-	result = SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	result = _SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	if(result < 0)
 	{
 		//init failed
@@ -2062,7 +2061,7 @@ void sdlInit()
 	}
 
 	//Create the hidden window
-	SDL_Window* sdlWindow = SDL_CreateWindow("test", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 100, 100, SDL_WINDOW_HIDDEN);
+	SDL_Window* sdlWindow = _SDL_CreateWindow("test", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 100, 100, SDL_WINDOW_HIDDEN);
 	if(sdlWindow == NULL)
 	{
 		printf("Warning: no SDL Window created");
