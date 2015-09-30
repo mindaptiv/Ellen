@@ -1117,7 +1117,6 @@ struct deviceStruct buildControllerDevice(int index, const char* deviceName, int
 	return device;
 }
 
-
 struct controllerStruct buildBlankController()
 {
 	//Variable Declaration
@@ -1162,6 +1161,24 @@ struct controllerStruct buildController(deviceStruct device, int index, int id)
 	//Return
 	return controller;
 }//END builder
+
+struct displayStruct buildBlankDisplay()
+{
+	//Variable Declaration
+	struct displayStruct display;
+
+	display.rotationPreference = ERROR_INT;
+	display.currentRotation = ERROR_INT;
+	display.nativeRotation = ERROR_INT;
+	display.isStereoscopicEnabled = ERROR_INT;
+	display.resolutionScale = ERROR_INT;
+	display.logicalDPI = ERROR_INT;
+	display.rawDPIX = ERROR_INT;
+	display.rawDPIY = ERROR_INT;
+
+	//Return
+	return display;
+}
 
 //END builders
 
