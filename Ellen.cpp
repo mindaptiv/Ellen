@@ -2012,9 +2012,6 @@ void synchControllerDevices(struct cylonStruct& et)
 
 					//set the superDevice's controllerIndex to that of the current position in the controllers list, making them synched
 					iterator->superDevice.controllerIndex = controllersIndex;
-
-					//TODO: check what else has its superDevice modified
-
 				}//END if match
 
 				//iterate over all deviceStructs
