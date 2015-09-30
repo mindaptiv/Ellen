@@ -194,6 +194,7 @@ void produceMemoryInfo(struct cylonStruct & et);
 void produceDeviceInfo(struct cylonStruct& et);
 void produceUsbDeviceInfo(struct cylonStruct& et);
 void produceControllerInfo(struct cylonStruct& et);
+void produceDisplayInfo(struct cylonStruct& et);
 void produceLog(struct cylonStruct& et);
 
 //Builders

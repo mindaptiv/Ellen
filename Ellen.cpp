@@ -464,7 +464,11 @@ void produceDeviceInfo(struct cylonStruct& et)
 
 void produceControllerInfo(struct cylonStruct& et)
 {
-	//TODO: don't call this if SDL didn't open
+	//don't call this if SDL didn't open
+	if(!allLibs[libsdl].opened)
+	{
+		return;
+	}
 
 	//add mappings
 	int mappingsResult = SDL_GameControllerAddMappingsFromFile("./src/Ellen/SDL_GameControllerDB/gamecontrollerdb.txt");
@@ -732,10 +736,13 @@ void produceUsbDeviceInfo(cylonStruct& et)
 		}//END WHILE
 }//END produce USB device info
 
+void produceDisplayInfo(struct cylonStruct& et)
+{
+
+}//END producer
+
 void produceLog(struct cylonStruct& et)
 {
-//TODO: restore this
-	/*
 	cout<<"Cylon @: "<<&et<<endl;
 	cout<<"Username: "<<et.username<<endl;
 	cout<<"Device Name: "<<et.deviceName<<endl;
@@ -756,7 +763,7 @@ void produceLog(struct cylonStruct& et)
 	cout<<"Detected Device Count: "<<et.detectedDeviceCount<<endl;
 	cout<<"Error: "<<hex<<et.error<<dec<<endl;
 	cout<<"Devices: "<<endl;
-*/
+
 	//credit to kmpofighter @ cplusplus.com for partial method code
 	for(list<deviceStruct>::const_iterator iterator = et.detectedDevices.begin(), end = et.detectedDevices.end(); iterator != end; ++iterator)
 	{
@@ -793,12 +800,6 @@ struct cylonStruct buildEllen()
 {
 	//Variable Declaration
 	struct cylonStruct ellen;
-
-	//fill table
-	//fillTable();
-
-	//open libs
-	//openLibs();
 
 	//producers
 	produceUserProfile(ellen);
@@ -1151,7 +1152,6 @@ struct controllerStruct buildController(deviceStruct device, int index, int id)
 
 	//set instance id of controller
 	controller.id = id;
-	cout<<"Controller built with instance id: "<<controller.id<<endl;
 
 	//set fields that may change later
 	controller.buttons = 0;
@@ -1169,6 +1169,12 @@ struct controllerStruct buildController(deviceStruct device, int index, int id)
 //parse gamecontroller and joystick events via event handling
 void pollControllerEvents(struct cylonStruct& et)
 {
+	//don't call this if SDL didn't open
+	if(!allLibs[libsdl].opened)
+	{
+		return;
+	}
+
 	//Variable Declaration
 	SDL_Event event;
 
@@ -1305,15 +1311,11 @@ void pollControllerEvents(struct cylonStruct& et)
 			if(!existingInstance)
 			{
 				synchControllerDevices(et);
-
-				//TODO: remove this
-				produceLog(et);
 			}
 		}//END if controller device added
 
 		else if(event.type == SDL_CONTROLLERDEVICEREMOVED)
 		{
-			cout<<"controller removed "<<event.cdevice.which<<endl;
 			//which for this event == instance id for the removed
 
 			//iterate over all controllers and find the one to purge
@@ -1353,9 +1355,6 @@ void pollControllerEvents(struct cylonStruct& et)
 
 			//Now recompute the player indexes
 			synchControllerDevices(et);
-
-			//TODO: remove this
-			produceLog(et);
 		}//END controller device removed
 
 		else if(event.type == SDL_CONTROLLERDEVICEREMAPPED)
@@ -1599,7 +1598,6 @@ void pollControllerEvents(struct cylonStruct& et)
 
 		else if(event.type == SDL_JOYDEVICEADDED)
 		{
-			cout<<"joystick added"<<endl;
 			//credit to Ryan C Gordon @ libsdl.org for clarification
 			//which for this event == joystick index for added device
 			//which for this event == instance id for the removed
@@ -1656,15 +1654,11 @@ void pollControllerEvents(struct cylonStruct& et)
 			if(!existingInstance)
 			{
 				synchControllerDevices(et);
-
-				//TODO: remove this
-				produceLog(et);
 			}
 		}
 
 		else if(event.type == SDL_JOYDEVICEREMOVED)
 		{
-			cout<<"joystick removed "<<event.jdevice.which<<endl;
 			//which for this event == instance id for the removed
 
 			//iterate over all controllers and find the one to purge
@@ -1704,9 +1698,6 @@ void pollControllerEvents(struct cylonStruct& et)
 
 			//Now recompute the player indexes
 			synchControllerDevices(et);
-
-			//TODO: remove this
-			produceLog(et);
 		}
 
 	}//END WHILE SDL_PollEvent
@@ -1722,6 +1713,12 @@ void pollControllerEvents(struct cylonStruct& et)
  */
 uint16_t pollButtons(uint16_t buttons, SDL_Event event, bool isGameController)
 {
+	//don't call this if SDL didn't open
+	if(!allLibs[libsdl].opened)
+	{
+		return buttons;
+	}
+
 	//Variable Declaration
 	int button;
 	Uint8 state;
@@ -1962,6 +1959,12 @@ bool isPSX(std::string gamepadName)
 
 void synchControllerDevices(struct cylonStruct& et)
 {
+	//don't call this if SDL didn't open
+	if(!allLibs[libsdl].opened)
+	{
+		return;
+	}
+
 	//Cast functions
 	SDL_NumJoysticks_t 		_SDL_NumJoysticks 		= (SDL_NumJoysticks_t) allLibs[libsdl].functions[SDL_NumJoysticks_e].funcAddr;
 	SDL_JoystickOpen_t		_SDL_JoystickOpen		= (SDL_JoystickOpen_t) allLibs[libsdl].functions[SDL_JoystickOpen_e].funcAddr;
@@ -2033,6 +2036,12 @@ void synchControllerDevices(struct cylonStruct& et)
 
 void sdlInit()
 {
+	//don't call this if SDL didn't open
+	if(!allLibs[libsdl].opened)
+	{
+		return;
+	}
+
 	//Cast functions
 	SDL_SetHint_t _SDL_SetHint = (SDL_SetHint_t) allLibs[libsdl].functions[SDL_SetHint_e].funcAddr;
 	SDL_Init_t _SDL_Init = (SDL_Init_t) allLibs[libsdl].functions[SDL_Init_e].funcAddr;
