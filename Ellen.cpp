@@ -454,9 +454,10 @@ void produceMemoryInfo(struct cylonStruct& et)
 
 void produceDeviceInfo(struct cylonStruct& et)
 {
-	//Grab USB Devices
+	//Grab Device Types
 	produceUsbDeviceInfo(et);
 	produceControllerInfo(et);
+	produceDisplayInfo(et);
 
 	//Grab total count
 	et.detectedDeviceCount = et.detectedDevices.size();
@@ -738,6 +739,27 @@ void produceUsbDeviceInfo(cylonStruct& et)
 
 void produceDisplayInfo(struct cylonStruct& et)
 {
+	//Get the number of display devices attached
+	int displayCount = SDL_GetNumVideoDisplays();
+	if(displayCount <= 0)
+	{
+		//no display devices detected
+		return;
+	}
+
+	for(int i = 0; i < displayCount; i++)
+	{
+		//Build structs
+		const char* displayName 	 = SDL_GetDisplayName(i);
+		struct deviceStruct device 	 = buildDisplayDevice(displayName, i);
+		struct displayStruct display = buildDisplay(device, i);
+
+		//Add to lists
+		et.displayDevices.push_back(display);
+		device.displayIndex = et.displayDevices.size() - 1;
+		et.detectedDevices.push_back(device);
+		et.displayDevices.back().superDevice = et.detectedDevices.back();  //TODO: test with synchronize Controllers
+	}//END for all displays
 
 }//END producer
 
@@ -762,8 +784,8 @@ void produceLog(struct cylonStruct& et)
 	cout<<"Min/Max App Address: "<<et.minAppAddress<<"/"<<et.maxAppAddress<<endl;
 	cout<<"Detected Device Count: "<<et.detectedDeviceCount<<endl;
 	cout<<"Error: "<<hex<<et.error<<dec<<endl;
-	cout<<"Devices: "<<endl;
 
+	cout<<"Devices: "<<endl;
 	//credit to kmpofighter @ cplusplus.com for partial method code
 	for(list<deviceStruct>::const_iterator iterator = et.detectedDevices.begin(), end = et.detectedDevices.end(); iterator != end; ++iterator)
 	{
@@ -776,6 +798,7 @@ void produceLog(struct cylonStruct& et)
 		cout<<"\t"<<"Display Index: "<<iterator->displayIndex<<endl;
 		cout<<"\t"<<"Storage Index: "<<iterator->storageIndex<<endl<<endl;
 	}
+	cout<<endl;
 
 	cout<<"Controllers: "<<endl;
 	for(list<controllerStruct>::const_iterator iterator = et.controllers.begin(), end = et.controllers.end(); iterator != end; ++iterator)
@@ -791,6 +814,21 @@ void produceLog(struct cylonStruct& et)
 		cout<<"\t"<<"Right X: "<<iterator->thumbRightX<<endl;
 		cout<<"\t"<<"Right Y: "<<iterator->thumbRightY<<endl<<endl;
 	}
+	cout<<endl;
+
+	cout<<"Displays: "<<endl;
+	for(list<displayStruct>::const_iterator iterator = et.displayDevices.begin(), end = et.displayDevices.end(); iterator != end; ++iterator)
+	{
+		cout<<"\t"<<"Name: "<<iterator->superDevice.name<<endl;
+		cout<<"\t"<<"Display# : "<<iterator->superDevice.id_int<<endl;
+		cout<<"\t"<<"Width: "<<iterator->horizontalResolution<<endl;
+		cout<<"\t"<<"Height: "<<iterator->verticalResolution<<endl;
+		cout<<"\t"<<"Upper Left X: "<<iterator->upperLeftX<<endl;
+		cout<<"\t"<<"Upper Left Y: "<<iterator->upperLeftY<<endl;
+		cout<<"\t"<<"Refresh Rate: "<<iterator->refreshRate<<endl<<endl;
+	}
+	cout<<endl;
+
 	cout<<"Log done"<<endl;
 }//END produceLog
 //END PRODUCERS
@@ -1115,7 +1153,49 @@ struct deviceStruct buildControllerDevice(int index, const char* deviceName, int
 
 	//Return
 	return device;
-}
+}//END method
+
+struct deviceStruct buildDisplayDevice(const char* displayName, int i)
+{
+	//Variable Declaration
+	struct deviceStruct device;
+
+	//Set Name
+	device.name = displayName;
+
+	//Set ID's
+	device.id_int = i;
+	device.id_string = "" + i;
+
+	//Set Device Type
+	device.deviceType = DISPLAY_TYPE;
+
+	//set default
+	device.isEnabled		= 1;
+
+	if(i == 0)
+	{
+		device.isDefault = 1;
+	}
+	else
+	{
+		device.isDefault = 0;
+	}
+
+	//Set values unavailable or unused in this context, or values that may change later
+	device.inDock 			= ERROR_INT;
+	device.controllerIndex	= ERROR_INT;
+	device.displayIndex		= ERROR_INT;
+	device.inLid			= ERROR_INT;
+	device.orientation		= ERROR_INT;
+	device.panelLocation	= ERROR_INT;
+	device.sensorsIndex		= ERROR_INT;
+	device.storageIndex		= ERROR_INT;
+	device.vendorID			= ERROR_INT;
+
+	//Return
+	return device;
+}//END build display device
 
 struct controllerStruct buildBlankController()
 {
@@ -1178,7 +1258,81 @@ struct displayStruct buildBlankDisplay()
 
 	//Return
 	return display;
-}
+}//END build blank display
+
+struct displayStruct buildDisplay(struct deviceStruct device, int i)
+{
+	//Variable Declaration
+	struct displayStruct display;
+
+	//set parent device copy
+	display.superDevice = device;
+
+	//Set fields unavailable in this context
+	display.currentRotation 		= ERROR_INT;
+	display.nativeRotation  		= ERROR_INT;
+	display.rotationPreference 		= ERROR_INT;
+	display.isStereoscopicEnabled 	= ERROR_INT;
+	display.logicalDPI 				= ERROR_INT;
+	display.rawDPIX 				= ERROR_INT;
+	display.rawDPIY 				= ERROR_INT;
+	display.resolutionScale			= ERROR_INT;
+
+	//TODO: add in when SDL 2.0.4 is released?
+	/*//Get DPI
+	float ddpi;
+	float hdpi;
+	float vdpi;
+
+	//result = SDL_GetDisplayDPI(i, &ddpi, &hdpi, &vdpi);
+	if(result < 0)
+	{
+		display.logicalDPI 				= ERROR_INT;
+		display.rawDPIX 				= ERROR_INT;
+		display.rawDPIY 				= ERROR_INT;
+		display.resolutionScale			= ERROR_INT;
+	}
+	else
+	{
+
+	}
+	 */
+
+	//Grab the display bounds
+	SDL_Rect rect;
+	int result = SDL_GetDisplayBounds(i, &rect);
+	if(result < 0)
+	{
+		display.horizontalResolution 	= ERROR_INT;
+		display.verticalResolution		= ERROR_INT;
+		display.upperLeftX				= ERROR_INT;
+		display.upperLeftY				= ERROR_INT;
+	}
+	else
+	{
+		display.horizontalResolution	= rect.w;
+		display.verticalResolution		= rect.h;
+		display.upperLeftX				= rect.x;
+		display.upperLeftY				= rect.y;
+	}
+
+	//Grab the display mode
+	SDL_DisplayMode currentMode;
+	result = SDL_GetCurrentDisplayMode(i, &currentMode);
+	if(result < 0)
+	{
+		//TODO: dont call these methods if SDL isnt open
+		display.refreshRate = ERROR_INT;
+	}
+	else
+	{
+		display.refreshRate = currentMode.refresh_rate;
+		display.driverData	= currentMode.driverdata;
+	}
+
+	//return
+	return display;
+}//END build display
 
 //END builders
 

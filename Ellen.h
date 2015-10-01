@@ -204,9 +204,11 @@ struct deviceStruct buildUsbDevice(struct libusb_device*);
 struct deviceStruct buildUsbDevice(struct libusb_device*, struct libusb_device_descriptor descriptor);
 struct deviceStruct buildUsbDevice(struct libusb_device* device, struct libusb_device_descriptor descriptor, int interfaceClass);
 struct deviceStruct buildControllerDevice(int index, const char* deviceName, int instanceID);
+struct deviceStruct buildDisplayDevice(const char* displayName, int i);
 struct controllerStruct buildBlankController();
 struct controllerStruct buildController(deviceStruct device, int index, int id);
 struct displayStruct buildBlankDisplay();
+struct displayStruct buildDisplay(struct deviceStruct device, int i);
 
 //Controller methods
 void sdlInit();
