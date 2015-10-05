@@ -23,6 +23,7 @@
 #include <sys/sysinfo.h>	//libc
 #include <sys/utsname.h>    //libc
 #include <sys/stat.h>		//libc
+#include <sys/statvfs.h>	//libc
 #include <stdlib.h>         //libc
 #include <sstream>			//libstdc++
 #include <iostream> 		//libstdc++
@@ -195,6 +196,7 @@ void produceDeviceInfo(struct cylonStruct& et);
 void produceUsbDeviceInfo(struct cylonStruct& et);
 void produceControllerInfo(struct cylonStruct& et);
 void produceDisplayInfo(struct cylonStruct& et);
+void produceStorageInfo(struct cylonStruct& et);
 void produceLog(struct cylonStruct& et);
 
 //Builders
@@ -205,10 +207,13 @@ struct deviceStruct buildUsbDevice(struct libusb_device*, struct libusb_device_d
 struct deviceStruct buildUsbDevice(struct libusb_device* device, struct libusb_device_descriptor descriptor, int interfaceClass);
 struct deviceStruct buildControllerDevice(int index, const char* deviceName, int instanceID);
 struct deviceStruct buildDisplayDevice(const char* displayName, int i);
+struct deviceStruct buildStorageDevice(std::string storageName);
 struct controllerStruct buildBlankController();
 struct controllerStruct buildController(deviceStruct device, int index, int id);
 struct displayStruct buildBlankDisplay();
 struct displayStruct buildDisplay(struct deviceStruct device, int i);
+struct storageStruct buildBlankStorage();
+struct storageStruct buildStorage(struct deviceStruct device);
 
 //Controller methods
 void sdlInit();

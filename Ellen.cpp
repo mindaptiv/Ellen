@@ -458,6 +458,7 @@ void produceDeviceInfo(struct cylonStruct& et)
 	produceUsbDeviceInfo(et);
 	produceControllerInfo(et);
 	produceDisplayInfo(et);
+	produceStorageInfo(et);
 
 	//Grab total count
 	et.detectedDeviceCount = et.detectedDevices.size();
@@ -758,10 +759,41 @@ void produceDisplayInfo(struct cylonStruct& et)
 		et.displayDevices.push_back(display);
 		device.displayIndex = et.displayDevices.size() - 1;
 		et.detectedDevices.push_back(device);
-		et.displayDevices.back().superDevice = et.detectedDevices.back();  //TODO: test with synchronize Controllers
+		et.displayDevices.back().superDevice = et.detectedDevices.back();  //TODO: test with controllers in place of current method for synchronize Controllers
 	}//END for all displays
 
 }//END producer
+
+void produceStorageInfo(struct cylonStruct& et)
+{
+	if(et.username.empty())
+	{
+		//no username set
+		return;
+	}
+
+	//NOTE: should be called after username already set
+	std::string path_string = "/media/" + et.username;
+	const char* path = path_string.c_str();
+
+	//Variable Declaration
+	struct statvfs buf;
+
+	//Grab file system specs
+	int result = statvfs(path, &buf);
+
+	if(result != 0)
+	{
+		//failed to grab storage specs
+		return;
+	}
+
+	cout<<buf.f_bfree<<endl;
+
+
+
+
+}
 
 void produceLog(struct cylonStruct& et)
 {
@@ -817,7 +849,7 @@ void produceLog(struct cylonStruct& et)
 	cout<<endl;
 
 	cout<<"Displays: "<<endl;
-	for(list<displayStruct>::const_iterator iterator = et.displayDevices.begin(), end = et.displayDevices.end(); iterator != end; ++iterator)
+	for(list<displayStruct>::iterator iterator = et.displayDevices.begin(), end = et.displayDevices.end(); iterator != end; ++iterator)
 	{
 		cout<<"\t"<<"Name: "<<iterator->superDevice.name<<endl;
 		cout<<"\t"<<"Display# : "<<iterator->superDevice.id_int<<endl;
@@ -1196,6 +1228,18 @@ struct deviceStruct buildDisplayDevice(const char* displayName, int i)
 	//Return
 	return device;
 }//END build display device
+
+//build a deviceStruct for a storage drive
+struct deviceStruct buildStorageDevice(std::string storageName)
+{
+	//Variable Declaration
+	struct deviceStruct device;
+
+	//
+
+	//Return
+	return device;
+}//END build
 
 struct controllerStruct buildBlankController()
 {
