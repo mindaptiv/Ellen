@@ -772,27 +772,71 @@ void produceStorageInfo(struct cylonStruct& et)
 		return;
 	}
 
-	//NOTE: should be called after username already set
-	std::string path_string = "/media/" + et.username;
-	const char* path = path_string.c_str();
+	//credit to jtshaw @ linuxquestions.org for partial method code
+	//grab storage names
+	std::string directory_string = "/media/" + et.username;
+	vector<string> files = vector<string>();
+	DIR* dp;
+	struct dirent* dirp;
+	const char* currentDir = ".";
+	const char* prevDir = "..";
 
-	//Variable Declaration
-	struct statvfs buf;
-
-	//Grab file system specs
-	int result = statvfs(path, &buf);
-
-	if(result != 0)
+	//attempt to open directory
+	if( (dp = opendir(directory_string.c_str())) == NULL )
 	{
-		//failed to grab storage specs
+		//do nothing
 		return;
 	}
+	else
+	{
+		//go through all the files in the directory
+		while( (dirp = readdir(dp)) != NULL)
+		{
+			//inspect name
+			bool isStorageDrive = true;
+			if (  (strcmp(dirp->d_name, prevDir) == 0) || (strcmp(dirp->d_name, currentDir) == 0) )
+			{
+				isStorageDrive = false;
+			}//END if storageDrive
 
-	cout<<buf.f_bfree<<endl;
+			//make sure the files we read are directories and not regular files/the current directory/the parent directory
+			if((dirp->d_type == DT_DIR) && isStorageDrive)
+			{
+				//grab the folder info
+				std::string dirName_string = directory_string + "/" + dirp->d_name;
+				const char* dirName_char   = dirName_string.c_str();
+				struct statvfs buf;
+				int result = statvfs(dirName_char, &buf);
+
+				//if successfully opened
+				if(result == 0)
+				{
+					//grab storage specs
+					uint64_t freeSpace = (uint64_t)(buf.f_bsize * buf.f_bfree);
+					cout<<dirp->d_name<<": "<<freeSpace<<endl;
+					uint64_t totalSpace = (uint64_t)(buf.f_bsize * buf.f_blocks);
+					cout<<dirp->d_name<<": "<<totalSpace<<endl;
+
+					//build structs and store them in lists
+					struct deviceStruct device = buildStorageDevice(dirp->d_name);
+					struct storageStruct storage = buildStorage(device, directory_string, freeSpace, totalSpace);
+
+					//TODO: add to lists
+
+				}//END if successfully opened
 
 
 
+			}//END if is folder and storage drive
+		}//END while
 
+		//close the directory
+		closedir(dp);
+	}//END if directory open attempt successful
+
+	//TODO: add gfvs MTP devices mtp://[usb:002,013]/
+	//TODO: add other gfvs devices
+	//TODO: add main user directory
 }
 
 void produceLog(struct cylonStruct& et)
@@ -1378,6 +1422,23 @@ struct displayStruct buildDisplay(struct deviceStruct device, int i)
 	return display;
 }//END build display
 
+struct storageStruct buildStorage(struct deviceStruct device, std::string path, uint64_t freeSpace, uint64_t totalSpace)
+{
+	//Variable Declaration
+	struct storageStruct storage;
+
+	//Set fields from args
+	storage.totalBytes  = totalSpace;
+	storage.bytesAvails = freeSpace;
+	storage.superDevice = device;
+	storage.path		= path;
+
+	//Set defaults
+	storage.isEmulated = ERROR_INT;
+
+	//Return
+	return storage;
+}
 //END builders
 
 //Controllers
