@@ -759,7 +759,7 @@ void produceDisplayInfo(struct cylonStruct& et)
 		et.displayDevices.push_back(display);
 		device.displayIndex = et.displayDevices.size() - 1;
 		et.detectedDevices.push_back(device);
-		et.displayDevices.back().superDevice = et.detectedDevices.back();  //TODO: test with controllers in place of current method for synchronize Controllers
+		et.displayDevices.back().superDevice = et.detectedDevices.back();
 	}//END for all displays
 
 }//END producer
@@ -821,12 +821,12 @@ void produceStorageInfo(struct cylonStruct& et)
 					struct deviceStruct device = buildStorageDevice(dirp->d_name);
 					struct storageStruct storage = buildStorage(device, directory_string, freeSpace, totalSpace);
 
-					//TODO: add to lists
-
+					//Add to lists
+					et.storages.push_back(storage);
+					device.storageIndex = et.storages.size() - 1;
+					et.detectedDevices.push_back(device);
+					et.storages.back().superDevice = et.detectedDevices.back();
 				}//END if successfully opened
-
-
-
 			}//END if is folder and storage drive
 		}//END while
 
@@ -903,6 +903,15 @@ void produceLog(struct cylonStruct& et)
 		cout<<"\t"<<"Upper Left Y: "<<iterator->upperLeftY<<endl;
 		cout<<"\t"<<"Refresh Rate: "<<iterator->refreshRate<<endl<<endl;
 	}
+	cout<<endl;
+
+	cout<<"Storage Drives: "<<endl;
+	for(list<storageStruct>::iterator iterator = et.storages.begin(), end = et.storages.end(); iterator != end; ++iterator)
+	{
+		cout<<"\t"<<"Path: "<<iterator->path<<endl;
+		cout<<"\t"<<"Bytes Available: "<<iterator->bytesAvails<<endl;
+		cout<<"\t"<<"Total Bytes: "<<iterator->totalBytes<<endl<<endl;
+	}//END for storages
 	cout<<endl;
 
 	cout<<"Log done"<<endl;
@@ -1279,7 +1288,28 @@ struct deviceStruct buildStorageDevice(std::string storageName)
 	//Variable Declaration
 	struct deviceStruct device;
 
-	//
+	//Set default/unavailable fields
+	device.panelLocation 	= ERROR_INT;
+	device.inLid			= ERROR_INT;
+	device.inDock			= ERROR_INT;
+	device.isDefault		= ERROR_INT;
+	device.isEnabled		= 1;
+	device.orientation		= ERROR_INT;
+	device.vendorID			= ERROR_INT;
+	device.id_int			= ERROR_INT; //TODO: hash this from the device path maybe so its unique?
+	device.sensorsIndex		= ERROR_INT;
+	device.controllerIndex	= ERROR_INT;
+	device.displayIndex		= ERROR_INT;
+
+	//set name
+	device.name				= storageName;
+	device.id_string		= storageName; //TODO: base this off of id_int if we change it to a hash
+
+	//set storage type
+	device.deviceType		= 4;
+
+	//set fields that will change later
+	device.storageIndex 	= ERROR_INT;
 
 	//Return
 	return device;
