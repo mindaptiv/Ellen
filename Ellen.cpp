@@ -545,6 +545,7 @@ void produceControllerInfo(struct cylonStruct& et)
 				et.controllers.push_back(controller);
 				device.controllerIndex = et.controllers.size() - 1;
 				et.detectedDevices.push_back(device);
+				et.controllers.back().superDevice = et.detectedDevices.back();
 			}//END if sdlController successfully opened
 		}//END if sdl is controller
 
@@ -565,6 +566,7 @@ void produceControllerInfo(struct cylonStruct& et)
 			et.controllers.push_back(controller);
 			device.controllerIndex = et.controllers.size() - 1;
 			et.detectedDevices.push_back(device);
+			et.controllers.back().superDevice = et.detectedDevices.back();
 		}
 	}//END for
 
@@ -2004,6 +2006,7 @@ void pollControllerEvents(struct cylonStruct& et)
 					et.controllers.push_back(controller);
 					device.controllerIndex = et.controllers.size() - 1;
 					et.detectedDevices.push_back(device);
+					et.controllers.back().superDevice = et.detectedDevices.back();
 				}//END if new device
 			}//end if open gamePad/joystick successful
 
