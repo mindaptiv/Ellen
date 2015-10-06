@@ -819,7 +819,7 @@ void produceStorageInfo(struct cylonStruct& et)
 
 					//build structs and store them in lists
 					struct deviceStruct device = buildStorageDevice(dirp->d_name);
-					struct storageStruct storage = buildStorage(device, directory_string, freeSpace, totalSpace);
+					struct storageStruct storage = buildStorage(device, dirName_string, freeSpace, totalSpace);
 
 					//Add to lists
 					et.storages.push_back(storage);
@@ -829,6 +829,7 @@ void produceStorageInfo(struct cylonStruct& et)
 				}//END if successfully opened
 			}//END if is folder and storage drive
 		}//END while
+
 
 		//close the directory
 		closedir(dp);
@@ -868,7 +869,7 @@ void produceLog(struct cylonStruct& et)
 		cout<<"\t"<<"Name: "<<iterator->name<<endl;
 		cout<<"\t"<<"Type: "<<iterator->deviceType<<endl;
 		cout<<"\t"<<"Vendor ID: "<<hex<<iterator->vendorID<<dec<<endl;
-		cout<<"\t"<<"Id: "<<iterator->id_int<<endl;
+		cout<<"\t"<<"Id: "<<hex<<iterator->id_int<<dec<<endl;
 		cout<<"\t"<<"Orientation: "<<iterator->orientation<<endl;
 		cout<<"\t"<<"Controller Index: "<<iterator->controllerIndex<<endl;
 		cout<<"\t"<<"Display Index: "<<iterator->displayIndex<<endl;
