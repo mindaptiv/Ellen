@@ -835,9 +835,6 @@ void produceStorageInfo(struct cylonStruct& et)
 	}//END if directory open attempt successful
 	//END MEDIA/ DEVICES
 
-	//TODO: add gfvs MTP devices mtp://[usb:002,013]/
-	//TODO: add other gfvs devices
-
 	//Try to open main user directory (the likely place you'll be reading/writing from on a per-user basis)
 	directory_string = "/home/" + et.username;
 
@@ -880,6 +877,16 @@ void produceStorageInfo(struct cylonStruct& et)
 		}//END while
 	}//END if user dir opened
 	//END user directory
+
+	//Grab effective user ID
+	//NOTE: should this be Real user ID?  change to geteuid
+	uid_t euid = getuid();
+
+	//Add gfvs MTP devices  e.g.  mtp://[usb:002,013]/
+	directory_string = "/run/user/" + euid ;
+
+
+	//TODO: add other gfvs devices?
 }//END storage producer
 
 void produceLog(struct cylonStruct& et)
@@ -1653,6 +1660,7 @@ void pollControllerEvents(struct cylonStruct& et)
 					et.controllers.push_back(controller);
 					device.controllerIndex = et.controllers.size() - 1;
 					et.detectedDevices.push_back(device);
+					et.controllers.back().superDevice = et.detectedDevices.back();
 				}//END if new device
 			}//end if open gamePad/joystick successful
 
