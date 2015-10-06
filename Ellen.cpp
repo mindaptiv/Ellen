@@ -766,6 +766,7 @@ void produceDisplayInfo(struct cylonStruct& et)
 
 void produceStorageInfo(struct cylonStruct& et)
 {
+	//MEDIA/ DEVICES:
 	if(et.username.empty())
 	{
 		//no username set
@@ -785,7 +786,6 @@ void produceStorageInfo(struct cylonStruct& et)
 	if( (dp = opendir(directory_string.c_str())) == NULL )
 	{
 		//do nothing
-		return;
 	}
 	else
 	{
@@ -830,15 +830,57 @@ void produceStorageInfo(struct cylonStruct& et)
 			}//END if is folder and storage drive
 		}//END while
 
-
 		//close the directory
 		closedir(dp);
 	}//END if directory open attempt successful
+	//END MEDIA/ DEVICES
 
 	//TODO: add gfvs MTP devices mtp://[usb:002,013]/
 	//TODO: add other gfvs devices
-	//TODO: add main user directory
-}
+
+	//Try to open main user directory (the likely place you'll be reading/writing from on a per-user basis)
+	directory_string = "/home/" + et.username;
+
+	//attempt to open directory
+	if( (dp = opendir(directory_string.c_str())) == NULL )
+	{
+		//do nothing
+	}
+	else
+	{
+		while( (dirp = readdir(dp)) != NULL)
+		{
+			//inspect name for "."
+			if ( (strcmp(dirp->d_name, currentDir) == 0) )
+			{
+				const char* dirName_char   = directory_string.c_str();
+				struct statvfs buf;
+				int result = statvfs(dirName_char, &buf);
+
+				//if successfully opened
+				if(result == 0)
+				{
+					//grab storage specs
+					uint64_t freeSpace = (uint64_t)(buf.f_bsize * buf.f_bfree);
+					cout<<dirp->d_name<<": "<<freeSpace<<endl;
+					uint64_t totalSpace = (uint64_t)(buf.f_bsize * buf.f_blocks);
+					cout<<dirp->d_name<<": "<<totalSpace<<endl;
+
+					//build structs and store them in lists
+					struct deviceStruct device = buildStorageDevice(et.username);
+					struct storageStruct storage = buildStorage(device, directory_string, freeSpace, totalSpace);
+
+					//Add to lists
+					et.storages.push_back(storage);
+					device.storageIndex = et.storages.size() - 1;
+					et.detectedDevices.push_back(device);
+					et.storages.back().superDevice = et.detectedDevices.back();
+				}//END if successfully opened
+			}//END if user directory
+		}//END while
+	}//END if user dir opened
+	//END user directory
+}//END storage producer
 
 void produceLog(struct cylonStruct& et)
 {
