@@ -815,9 +815,7 @@ void produceStorageInfo(struct cylonStruct& et)
 				{
 					//grab storage specs
 					uint64_t freeSpace = (uint64_t)(buf.f_bsize * buf.f_bfree);
-					cout<<dirp->d_name<<": "<<freeSpace<<endl;
 					uint64_t totalSpace = (uint64_t)(buf.f_bsize * buf.f_blocks);
-					cout<<dirp->d_name<<": "<<totalSpace<<endl;
 
 					//build structs and store them in lists
 					struct deviceStruct device = buildStorageDevice(dirp->d_name);
@@ -861,9 +859,7 @@ void produceStorageInfo(struct cylonStruct& et)
 				{
 					//grab storage specs
 					uint64_t freeSpace = (uint64_t)(buf.f_bsize * buf.f_bfree);
-					cout<<dirp->d_name<<": "<<freeSpace<<endl;
 					uint64_t totalSpace = (uint64_t)(buf.f_bsize * buf.f_blocks);
-					cout<<dirp->d_name<<": "<<totalSpace<<endl;
 
 					//build structs and store them in lists
 					struct deviceStruct device = buildStorageDevice(et.username);
@@ -877,6 +873,9 @@ void produceStorageInfo(struct cylonStruct& et)
 				}//END if successfully opened
 			}//END if user directory
 		}//END while
+
+		//close the directory
+		closedir(dp);
 	}//END if user dir opened
 	//END user directory
 
@@ -885,10 +884,77 @@ void produceStorageInfo(struct cylonStruct& et)
 	uid_t euid = getuid();
 
 	//Add gfvs MTP devices  e.g.  mtp://[usb:002,013]/
-	directory_string = "/run/user/" + euid ;
+	ostringstream oss;
+	oss<<"/run/user/"<<euid<<"/gvfs";
+	directory_string = oss.str();
+
+	//attempt to open directory
+		if( (dp = opendir(directory_string.c_str())) == NULL )
+		{
+			//do nothing
+		}
+		else
+		{
+			//go through all the files in the directory
+			while( (dirp = readdir(dp)) != NULL)
+			{
+				//inspect name
+				bool isUSBMtpDrive = false;
+				cout<<dirp->d_name<<endl;
+				char mtpMatch[] = "mtp:host=%5Busb%3A";
+
+				//Credit to user529758 @ stackoverflow for partial method code
+				if (  strstr(dirp->d_name, mtpMatch) )
+				{
+					//see if the false dir follows this methodology
+					isUSBMtpDrive = true;
+				}//END if storageDrive
+
+				//make sure the files we read are directories and not regular files/the current directory/the parent directory
+				if(isUSBMtpDrive)
+				{
+					cout<<"Name: "<<dirp->d_name<<endl;
+
+					//grab the folder info
+					std::string dirName_string = directory_string + "/" + dirp->d_name;
+					const char* dirName_char   = dirName_string.c_str();
+					struct statvfs buf;
+					int result = statvfs(dirName_char, &buf);
+
+					//if successfully opened
+					if(result == 0)
+					{
+						//grab storage specs
+						uint64_t freeSpace = (uint64_t)(buf.f_bsize * buf.f_bfree);
+						uint64_t totalSpace = (uint64_t)(buf.f_bsize * buf.f_blocks);
+
+						//make sure we're reading a directory style object and not a file
+						if ( (totalSpace > 0) && (freeSpace >= 0) && (freeSpace <= totalSpace) )
+						{
+							//build structs and store them in lists
+							struct deviceStruct device = buildStorageDevice(dirp->d_name);
+							struct storageStruct storage = buildStorage(device, dirName_string, freeSpace, totalSpace);
+
+							//TODO: match to USB device struct (if it exists)
+
+							//Add to lists
+							et.storages.push_back(storage);
+							device.storageIndex = et.storages.size() - 1;
+							et.detectedDevices.push_back(device);
+							et.storages.back().superDevice = et.detectedDevices.back();
+						}//END if a directory
+					}//END if successfully opened
+				}//END if file fits MTP profile for GVFS
+			}//END while
+
+			//close the directory
+			closedir(dp);
+		}//END if directory open attempt successful
+		//END MTP GVFS devices
 
 
 	//TODO: add other gfvs devices?
+	//TODO: for other distros add KIO mounting locations?
 }//END storage producer
 
 void produceLog(struct cylonStruct& et)
