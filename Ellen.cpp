@@ -697,6 +697,9 @@ void produceUsbDeviceInfo(cylonStruct& et)
 		//Check for errors
 		if(!pipe)
 		{
+			//close pipe
+			pclose(pipe);
+
 			//pipe command failed, we're done here
 			return;
 		}
@@ -884,6 +887,74 @@ void produceStorageInfo(struct cylonStruct& et)
 	uid_t euid = getuid();
 
 	//Add gfvs MTP devices  e.g.  mtp://[usb:002,013]/
+	//grab the lsusb output (if available)
+	//Variable declaration
+	char buffer[8192];
+	const char* consoleCommand = "lsusb";
+
+	//open the pipe
+	FILE* pipe = popen(consoleCommand, "r");
+
+	//Check for errors
+	if(!pipe)
+	{
+		//close pipe
+		pclose(pipe);
+
+		//Can't get output info, bail
+		cout<<"BAILING"<<endl;
+		return;
+	}
+
+	//read into the buffer
+	size_t bytes_read = fread (buffer, 1, sizeof(buffer), pipe);
+
+	//close pipe
+	pclose(pipe);
+
+	//TODO: convert buffer into strings
+	//Credit to Component 10, Jamie Bullock & billz @ stackoverflow for partial method code
+	std::string line;
+	std::vector <std::string> lines;
+	std::stringstream ss(buffer);
+
+	if(buffer != NULL)
+	{
+		//grab each line
+		while ( std::getline(ss,line,'\n') )
+		{
+			lines.push_back(line);
+		}//END inner while
+	}//END if buffer exists
+
+	for(std::vector<std::string>::iterator iterator = lines.begin(); iterator != lines.end(); ++iterator)
+	{
+		cout<<*iterator<<endl;
+	}//END for
+
+	//iterate over devices
+/*	for(list<deviceStruct>::const_iterator iterator = et.detectedDevices.begin(), end = et.detectedDevices.end(); iterator != end; ++iterator)
+	{
+		//Build spot string
+		ostringstream oss;
+		oss << hex << setfill('0')<<setw(4)<<iterator->vendorID;
+		std::string spotStr = oss.str();
+		oss<<dec;
+		spotStr = spotStr + ":" + iterator->id_string;
+		const char* spot = spotStr.c_str();
+		char* match = strstr(buffer, spot);
+
+		//check if match exists
+		if(match != NULL)
+		{
+			cout<<"Match found"<<endl;
+			cout<<match<<endl;
+
+		}//END if match exists
+
+	}//END for */
+
+	//build gvfs directory string
 	ostringstream oss;
 	oss<<"/run/user/"<<euid<<"/gvfs";
 	directory_string = oss.str();
@@ -900,7 +971,6 @@ void produceStorageInfo(struct cylonStruct& et)
 			{
 				//inspect name
 				bool isUSBMtpDrive = false;
-				cout<<dirp->d_name<<endl;
 				char mtpMatch[] = "mtp:host=%5Busb%3A";
 
 				//Credit to user529758 @ stackoverflow for partial method code
@@ -936,6 +1006,7 @@ void produceStorageInfo(struct cylonStruct& et)
 							struct storageStruct storage = buildStorage(device, dirName_string, freeSpace, totalSpace);
 
 							//TODO: match to USB device struct (if it exists)
+
 
 							//Add to lists
 							et.storages.push_back(storage);
@@ -990,7 +1061,9 @@ void produceLog(struct cylonStruct& et)
 		cout<<"\t"<<"Orientation: "<<iterator->orientation<<endl;
 		cout<<"\t"<<"Controller Index: "<<iterator->controllerIndex<<endl;
 		cout<<"\t"<<"Display Index: "<<iterator->displayIndex<<endl;
-		cout<<"\t"<<"Storage Index: "<<iterator->storageIndex<<endl<<endl;
+		cout<<"\t"<<"Storage Index: "<<iterator->storageIndex<<endl;
+		cout<<"\t"<<"USB Bus: "<<iterator->usb_bus<<endl;
+		cout<<"\t"<<"USB Port: "<<iterator->usb_deviceNumber<<endl<<endl;
 	}
 	cout<<endl;
 
@@ -1077,6 +1150,8 @@ struct deviceStruct buildBlankDevice()
 	device.id_string		= ERROR_STRING;
 	device.id_int			= ERROR_INT;
 	device.deviceType		= ERROR_INT;
+	device.usb_bus			= ERROR_INT;
+	device.usb_deviceNumber	= ERROR_INT;
 
 	//Return
 	return device;
@@ -1099,6 +1174,10 @@ struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_d
 	device.sensorsIndex		= ERROR_INT;
 	device.name				= ERROR_STRING;
 	device.isEnabled		= 1;
+
+	//set USB fields
+	device.usb_bus			= libusb_get_bus_number(usbDev);
+	device.usb_deviceNumber = ERROR_INT; //maybe changes later
 
 	//grab fields from arguments
 	device.vendorID			= descriptor.idVendor;
@@ -1214,6 +1293,10 @@ struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_d
 	device.sensorsIndex		= ERROR_INT;
 	device.name				= ERROR_STRING;
 	device.isEnabled		= 1;
+
+	//set USB fields
+	device.usb_bus			= libusb_get_bus_number(usbDev);
+	device.usb_deviceNumber = ERROR_INT; //maybe changes later
 
 	//grab fields from arguments
 	device.vendorID			= descriptor.idVendor;
@@ -1335,6 +1418,8 @@ struct deviceStruct buildControllerDevice(int index, const char* deviceName, int
 	device.controllerIndex	= ERROR_INT; //value to be set later
 	device.storageIndex 	= ERROR_INT;
 	device.sensorsIndex		= ERROR_INT;
+	device.usb_bus			= ERROR_INT;
+	device.usb_deviceNumber	= ERROR_INT;
 
 	//set device type
 	device.deviceType 		= CONTROLLER_TYPE;
@@ -1395,6 +1480,8 @@ struct deviceStruct buildDisplayDevice(const char* displayName, int i)
 	device.sensorsIndex		= ERROR_INT;
 	device.storageIndex		= ERROR_INT;
 	device.vendorID			= ERROR_INT;
+	device.usb_bus			= ERROR_INT;
+	device.usb_deviceNumber	= ERROR_INT;
 
 	//Return
 	return device;
@@ -1418,6 +1505,8 @@ struct deviceStruct buildStorageDevice(std::string storageName)
 	device.sensorsIndex		= ERROR_INT;
 	device.controllerIndex	= ERROR_INT;
 	device.displayIndex		= ERROR_INT;
+	device.usb_bus			= ERROR_INT;
+	device.usb_deviceNumber	= ERROR_INT;
 
 	//set name
 	device.name				= storageName;
