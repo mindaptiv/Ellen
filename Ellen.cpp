@@ -758,7 +758,6 @@ void produceUsbDeviceInfo(cylonStruct& et)
 				detectedDevices.front().name = englishName;
 			}//END if match is null
 
-			//UNICORN
 			//set udev number for devices
 			//grab the first line
 			int deviceNumber;
@@ -951,8 +950,6 @@ void produceStorageInfo(struct cylonStruct& et)
 				//make sure the files we read are directories and not regular files/the current directory/the parent directory
 				if(isUSBMtpDrive)
 				{
-					cout<<"Name: "<<dirp->d_name<<endl;
-
 					//grab the folder info
 					std::string dirName_string = directory_string + "/" + dirp->d_name;
 					const char* dirName_char   = dirName_string.c_str();
@@ -969,21 +966,56 @@ void produceStorageInfo(struct cylonStruct& et)
 						//make sure we're reading a directory style object and not a file
 						if ( (totalSpace > 0) && (freeSpace >= 0) && (freeSpace <= totalSpace) )
 						{
-							//build structs and store them in lists
-							struct deviceStruct device = buildStorageDevice(dirp->d_name);
-							struct storageStruct storage = buildStorage(device, dirName_string, freeSpace, totalSpace);
+							//match to USB device struct (if it exists)
+							char firstString[18];
+							char secondString[3];
+							uint32_t bus;
+							uint32_t dev;
+							sscanf(dirp->d_name,"%18s%d%3s%d", firstString, &bus, secondString, &dev);
 
-							//TODO: match to USB device struct (if it exists)
+							struct deviceStruct device;
+							bool found = false;
 
+							for(list<deviceStruct>::iterator iterator = et.detectedDevices.begin(), end = et.detectedDevices.end(); iterator != end; ++iterator)
+							{
+								if( (iterator->usb_bus == bus) && (iterator->udev_deviceNumber == dev))
+								{
+									//If the bus and devNum match then use pre-existing deviceStruct
+									found = true;
+									device = *iterator;
 
-							//Add to lists
-							et.storages.push_back(storage);
-							device.storageIndex = et.storages.size() - 1;
-							et.detectedDevices.push_back(device);
-							et.storages.back().superDevice = et.detectedDevices.back();
+									//create and store storage struct and then update the deviceStruct
+									struct storageStruct storage = buildStorage(device, dirName_string, freeSpace, totalSpace);
+									et.storages.push_back(storage);
+									iterator->storageIndex = et.storages.size() -1;
+									et.storages.back().superDevice = *iterator;
+
+									//bail
+									break;
+								}//END if
+							}//END for
+
+							//if no matching device struct located, build structs and store them in lists
+							if(!found)
+							{
+								//I don't know how we got here unless if something was unplugged/replugged in the <1sec it took for this to run
+								device = buildStorageDevice(dirp->d_name);
+								struct storageStruct storage = buildStorage(device, dirName_string, freeSpace, totalSpace);
+
+								//put into lists
+								et.storages.push_back(storage);
+								device.storageIndex = et.storages.size() - 1;
+								et.detectedDevices.push_back(device);
+								et.storages.back().superDevice = et.detectedDevices.back();
+							}//END if not found
 						}//END if a directory
 					}//END if successfully opened
 				}//END if file fits MTP profile for GVFS
+				//not MTP but still in GVFS
+				else
+				{
+					//TODO: add other gfvs devices?
+				}
 			}//END while
 
 			//close the directory
@@ -991,8 +1023,6 @@ void produceStorageInfo(struct cylonStruct& et)
 		}//END if directory open attempt successful
 		//END MTP GVFS devices
 
-
-	//TODO: add other gfvs devices?
 	//TODO: for other distros add KIO mounting locations?
 }//END storage producer
 
