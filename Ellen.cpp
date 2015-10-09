@@ -927,104 +927,120 @@ void produceStorageInfo(struct cylonStruct& et)
 	directory_string = oss.str();
 
 	//attempt to open directory
-		if( (dp = opendir(directory_string.c_str())) == NULL )
+	if( (dp = opendir(directory_string.c_str())) == NULL )
+	{
+		//do nothing
+	}
+	else
+	{
+		//go through all the files in the directory
+		while( (dirp = readdir(dp)) != NULL)
 		{
-			//do nothing
-		}
-		else
-		{
-			//go through all the files in the directory
-			while( (dirp = readdir(dp)) != NULL)
+			//inspect name
+			bool isUSBMtpDrive = false;
+			char mtpMatch[] = "mtp:host=%5Busb%3A";
+
+			//Credit to user529758 @ stackoverflow for partial method code
+			if (  strstr(dirp->d_name, mtpMatch) )
 			{
-				//inspect name
-				bool isUSBMtpDrive = false;
-				char mtpMatch[] = "mtp:host=%5Busb%3A";
+				//see if the false dir follows this methodology
+				isUSBMtpDrive = true;
+			}//END if storageDrive
 
-				//Credit to user529758 @ stackoverflow for partial method code
-				if (  strstr(dirp->d_name, mtpMatch) )
+			//grab the folder info
+			std::string dirName_string = directory_string + "/" + dirp->d_name;
+			const char* dirName_char   = dirName_string.c_str();
+			struct statvfs buf;
+			int result = statvfs(dirName_char, &buf);
+
+			//make sure the files we read are directories and not regular files/the current directory/the parent directory
+			if(result == 0)
+			{
+				//if successfully opened
+				//grab storage specs
+				uint64_t freeSpace = (uint64_t)(buf.f_bsize * buf.f_bfree);
+				uint64_t totalSpace = (uint64_t)(buf.f_bsize * buf.f_blocks);
+				//make sure we're reading a directory style object and not a file
+				if ( (totalSpace > 0) && (freeSpace >= 0) && (freeSpace <= totalSpace) )
 				{
-					//see if the false dir follows this methodology
-					isUSBMtpDrive = true;
-				}//END if storageDrive
-
-				//make sure the files we read are directories and not regular files/the current directory/the parent directory
-				if(isUSBMtpDrive)
-				{
-					//grab the folder info
-					std::string dirName_string = directory_string + "/" + dirp->d_name;
-					const char* dirName_char   = dirName_string.c_str();
-					struct statvfs buf;
-					int result = statvfs(dirName_char, &buf);
-
-					//if successfully opened
-					if(result == 0)
+					if(isUSBMtpDrive)
 					{
-						//grab storage specs
-						uint64_t freeSpace = (uint64_t)(buf.f_bsize * buf.f_bfree);
-						uint64_t totalSpace = (uint64_t)(buf.f_bsize * buf.f_blocks);
+						//match to USB device struct (if it exists)
+						char firstString[18];
+						char secondString[3];
+						uint32_t bus;
+						uint32_t dev;
+						sscanf(dirp->d_name,"%18s%d%3s%d", firstString, &bus, secondString, &dev);
 
-						//make sure we're reading a directory style object and not a file
-						if ( (totalSpace > 0) && (freeSpace >= 0) && (freeSpace <= totalSpace) )
+						struct deviceStruct device;
+						bool found = false;
+
+						for(list<deviceStruct>::iterator iterator = et.detectedDevices.begin(), end = et.detectedDevices.end(); iterator != end; ++iterator)
 						{
-							//match to USB device struct (if it exists)
-							char firstString[18];
-							char secondString[3];
-							uint32_t bus;
-							uint32_t dev;
-							sscanf(dirp->d_name,"%18s%d%3s%d", firstString, &bus, secondString, &dev);
-
-							struct deviceStruct device;
-							bool found = false;
-
-							for(list<deviceStruct>::iterator iterator = et.detectedDevices.begin(), end = et.detectedDevices.end(); iterator != end; ++iterator)
+							if( (iterator->usb_bus == bus) && (iterator->udev_deviceNumber == dev))
 							{
-								if( (iterator->usb_bus == bus) && (iterator->udev_deviceNumber == dev))
-								{
-									//If the bus and devNum match then use pre-existing deviceStruct
-									found = true;
-									device = *iterator;
+								//If the bus and devNum match then use pre-existing deviceStruct
+								found = true;
+								device = *iterator;
 
-									//create and store storage struct and then update the deviceStruct
-									struct storageStruct storage = buildStorage(device, dirName_string, freeSpace, totalSpace);
-									et.storages.push_back(storage);
-									iterator->storageIndex = et.storages.size() -1;
-									et.storages.back().superDevice = *iterator;
-
-									//bail
-									break;
-								}//END if
-							}//END for
-
-							//if no matching device struct located, build structs and store them in lists
-							if(!found)
-							{
-								//I don't know how we got here unless if something was unplugged/replugged in the <1sec it took for this to run
-								device = buildStorageDevice(dirp->d_name);
+								//create and store storage struct and then update the deviceStruct
 								struct storageStruct storage = buildStorage(device, dirName_string, freeSpace, totalSpace);
-
-								//put into lists
 								et.storages.push_back(storage);
-								device.storageIndex = et.storages.size() - 1;
-								et.detectedDevices.push_back(device);
-								et.storages.back().superDevice = et.detectedDevices.back();
-							}//END if not found
-						}//END if a directory
-					}//END if successfully opened
-				}//END if file fits MTP profile for GVFS
-				//not MTP but still in GVFS
-				else
-				{
-					//TODO: add other gfvs devices?
-				}
-			}//END while
+								iterator->storageIndex = et.storages.size() -1;
+								et.storages.back().superDevice = *iterator;
 
-			//close the directory
-			closedir(dp);
-		}//END if directory open attempt successful
-		//END MTP GVFS devices
+								//bail
+								break;
+							}//END if bus and dev numbers match
+						}//END for all detected devices
 
-	//TODO: for other distros add KIO mounting locations?
-}//END storage producer
+						//if no matching device struct located, build structs and store them in lists
+						if(!found)
+						{
+							//I don't know how we got here unless if something was unplugged/replugged in the <1sec it took for this to run
+							device = buildStorageDevice(dirp->d_name);
+							struct storageStruct storage = buildStorage(device, dirName_string, freeSpace, totalSpace);
+
+							//put into lists
+							et.storages.push_back(storage);
+							device.storageIndex = et.storages.size() - 1;
+							et.detectedDevices.push_back(device);
+							et.storages.back().superDevice = et.detectedDevices.back();
+						}//END if not found
+					}//END if an MTP drive
+					//not MTP but still in GVFS
+					else
+					{
+						bool currentOrParentDir = false;
+						if (  (strcmp(dirp->d_name, prevDir) == 0) || (strcmp(dirp->d_name, currentDir) == 0) )
+						{
+							currentOrParentDir = true;
+						}//END if . or ..
+
+						if(currentOrParentDir == false)
+						{
+							//build structs and store them in lists
+							struct deviceStruct device = buildStorageDevice(et.username);
+							struct storageStruct storage = buildStorage(device, directory_string, freeSpace, totalSpace);
+
+							//Add to lists
+							et.storages.push_back(storage);
+							device.storageIndex = et.storages.size() - 1;
+							et.detectedDevices.push_back(device);
+							et.storages.back().superDevice = et.detectedDevices.back();
+						}//END if NOT current or parent dir
+					}//END if file doesn't fit MTP profile
+				}//END if a directory style object
+			}//END if result is 0
+		}//END while
+
+		//close the directory
+		closedir(dp);
+	}//END if successfully opendir'd
+	//END GVFS devices
+
+	//TODO: for other distros add KIO mounting locations
+}//END storage produce
 
 void produceLog(struct cylonStruct& et)
 {
