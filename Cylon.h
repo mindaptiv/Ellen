@@ -145,7 +145,7 @@ struct deviceStruct
 	std::string		id_string;			//id in string format
 	uint32_t		id_int;				//id in integer format
 	uint32_t		usb_bus;			//usb bus, where available
-	uint32_t		usb_deviceNumber;	//usb device #, where available
+	uint32_t		udev_deviceNumber;	//usb device #, where available
 
 	//type
 	uint32_t				deviceType;

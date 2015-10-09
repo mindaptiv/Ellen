@@ -710,6 +710,27 @@ void produceUsbDeviceInfo(cylonStruct& et)
 		//close pipe
 		pclose(pipe);
 
+		if(bytes_read <= 0)
+		{
+			//No data, bail
+			return;
+		}
+
+		//Convert buffer into strings
+		//Credit to Component 10, Jamie Bullock & billz @ stackoverflow for partial method code
+		std::string line;
+		std::vector <std::string> lines;
+		std::stringstream ss(buffer);
+
+		if(buffer != NULL)
+		{
+			//grab each line
+			while ( std::getline(ss,line,'\n') )
+			{
+				lines.push_back(line);
+			}//END inner while
+		}//END if buffer exists
+
 		//parse result for every device we found so far
 		while(!detectedDevices.empty())
 		{
@@ -736,6 +757,20 @@ void produceUsbDeviceInfo(cylonStruct& et)
 				sscanf(match, "%x:%x %[^\t\n]", &dontcare, &dontcare2, englishName);
 				detectedDevices.front().name = englishName;
 			}//END if match is null
+
+			//UNICORN
+			//set udev number for devices
+			//grab the first line
+			int deviceNumber;
+			int busNumber;
+			int vendorID;
+			int deviceID;
+			char deviceName[detectedDevices.front().name.size()];
+
+			sscanf(lines.begin()->c_str(), "Bus %d Device %d: ID %x:%x %[^\t\n]", &busNumber, &deviceNumber, &vendorID, &deviceID, deviceName);
+			lines.erase(lines.begin());
+
+			detectedDevices.front().udev_deviceNumber = deviceNumber;
 
 			//empty list and move contents to cylon's list
 			et.detectedDevices.push_back(detectedDevices.front());
@@ -882,77 +917,10 @@ void produceStorageInfo(struct cylonStruct& et)
 	}//END if user dir opened
 	//END user directory
 
+	//Add gfvs MTP devices  e.g.  mtp://[usb:002,013]/
 	//Grab effective user ID
 	//NOTE: should this be Real user ID?  change to geteuid
 	uid_t euid = getuid();
-
-	//Add gfvs MTP devices  e.g.  mtp://[usb:002,013]/
-	//grab the lsusb output (if available)
-	//Variable declaration
-	char buffer[8192];
-	const char* consoleCommand = "lsusb";
-
-	//open the pipe
-	FILE* pipe = popen(consoleCommand, "r");
-
-	//Check for errors
-	if(!pipe)
-	{
-		//close pipe
-		pclose(pipe);
-
-		//Can't get output info, bail
-		cout<<"BAILING"<<endl;
-		return;
-	}
-
-	//read into the buffer
-	size_t bytes_read = fread (buffer, 1, sizeof(buffer), pipe);
-
-	//close pipe
-	pclose(pipe);
-
-	//TODO: convert buffer into strings
-	//Credit to Component 10, Jamie Bullock & billz @ stackoverflow for partial method code
-	std::string line;
-	std::vector <std::string> lines;
-	std::stringstream ss(buffer);
-
-	if(buffer != NULL)
-	{
-		//grab each line
-		while ( std::getline(ss,line,'\n') )
-		{
-			lines.push_back(line);
-		}//END inner while
-	}//END if buffer exists
-
-	for(std::vector<std::string>::iterator iterator = lines.begin(); iterator != lines.end(); ++iterator)
-	{
-		cout<<*iterator<<endl;
-	}//END for
-
-	//iterate over devices
-/*	for(list<deviceStruct>::const_iterator iterator = et.detectedDevices.begin(), end = et.detectedDevices.end(); iterator != end; ++iterator)
-	{
-		//Build spot string
-		ostringstream oss;
-		oss << hex << setfill('0')<<setw(4)<<iterator->vendorID;
-		std::string spotStr = oss.str();
-		oss<<dec;
-		spotStr = spotStr + ":" + iterator->id_string;
-		const char* spot = spotStr.c_str();
-		char* match = strstr(buffer, spot);
-
-		//check if match exists
-		if(match != NULL)
-		{
-			cout<<"Match found"<<endl;
-			cout<<match<<endl;
-
-		}//END if match exists
-
-	}//END for */
 
 	//build gvfs directory string
 	ostringstream oss;
@@ -1063,7 +1031,7 @@ void produceLog(struct cylonStruct& et)
 		cout<<"\t"<<"Display Index: "<<iterator->displayIndex<<endl;
 		cout<<"\t"<<"Storage Index: "<<iterator->storageIndex<<endl;
 		cout<<"\t"<<"USB Bus: "<<iterator->usb_bus<<endl;
-		cout<<"\t"<<"USB Port: "<<iterator->usb_deviceNumber<<endl<<endl;
+		cout<<"\t"<<"UDev Device #: "<<iterator->udev_deviceNumber<<endl<<endl;
 	}
 	cout<<endl;
 
@@ -1151,7 +1119,7 @@ struct deviceStruct buildBlankDevice()
 	device.id_int			= ERROR_INT;
 	device.deviceType		= ERROR_INT;
 	device.usb_bus			= ERROR_INT;
-	device.usb_deviceNumber	= ERROR_INT;
+	device.udev_deviceNumber = ERROR_INT;
 
 	//Return
 	return device;
@@ -1177,7 +1145,7 @@ struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_d
 
 	//set USB fields
 	device.usb_bus			= libusb_get_bus_number(usbDev);
-	device.usb_deviceNumber = ERROR_INT; //maybe changes later
+	device.udev_deviceNumber = ERROR_INT; //maybe changes later
 
 	//grab fields from arguments
 	device.vendorID			= descriptor.idVendor;
@@ -1296,7 +1264,7 @@ struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_d
 
 	//set USB fields
 	device.usb_bus			= libusb_get_bus_number(usbDev);
-	device.usb_deviceNumber = ERROR_INT; //maybe changes later
+	device.udev_deviceNumber = ERROR_INT; //maybe changes later
 
 	//grab fields from arguments
 	device.vendorID			= descriptor.idVendor;
@@ -1419,7 +1387,7 @@ struct deviceStruct buildControllerDevice(int index, const char* deviceName, int
 	device.storageIndex 	= ERROR_INT;
 	device.sensorsIndex		= ERROR_INT;
 	device.usb_bus			= ERROR_INT;
-	device.usb_deviceNumber	= ERROR_INT;
+	device.udev_deviceNumber	= ERROR_INT;
 
 	//set device type
 	device.deviceType 		= CONTROLLER_TYPE;
@@ -1481,7 +1449,7 @@ struct deviceStruct buildDisplayDevice(const char* displayName, int i)
 	device.storageIndex		= ERROR_INT;
 	device.vendorID			= ERROR_INT;
 	device.usb_bus			= ERROR_INT;
-	device.usb_deviceNumber	= ERROR_INT;
+	device.udev_deviceNumber	= ERROR_INT;
 
 	//Return
 	return device;
@@ -1506,7 +1474,7 @@ struct deviceStruct buildStorageDevice(std::string storageName)
 	device.controllerIndex	= ERROR_INT;
 	device.displayIndex		= ERROR_INT;
 	device.usb_bus			= ERROR_INT;
-	device.usb_deviceNumber	= ERROR_INT;
+	device.udev_deviceNumber	= ERROR_INT;
 
 	//set name
 	device.name				= storageName;
