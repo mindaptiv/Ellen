@@ -94,7 +94,30 @@ libFunc libsdlFunctions[libsdlCount] =
 		{
 			SDL_GL_SETATTRIBUTE,
 			NULL
-		}//END ENTRIES
+		},
+
+		{
+			SDL_GETNUMVIDEODISPLAYS,
+			NULL
+		},
+
+		{
+			SDL_GETDISPLAYNAME,
+			NULL
+		},
+
+		{
+			SDL_GETDISPLAYBOUNDS,
+			NULL
+		},
+
+		{
+			SDL_GETCURRENTDISPLAYMODE,
+			NULL
+		}
+
+
+		//END ENTRIES
 }; //END ARRAY
 
 libFunc libusbFunctions[libusbCount] =
@@ -126,6 +149,11 @@ libFunc libusbFunctions[libusbCount] =
 
 		{
 			LIBUSB_EXIT,
+			NULL
+		},
+
+		{
+			LIBUSB_GET_BUS_NUMBER,
 			NULL
 		}
 };
@@ -779,8 +807,12 @@ void produceUsbDeviceInfo(cylonStruct& et)
 
 void produceDisplayInfo(struct cylonStruct& et)
 {
+	//Cast functions
+	SDL_GetNumVideoDisplays_t _SDL_GetNumVideoDisplays = (SDL_GetNumVideoDisplays_t) allLibs[libsdl].functions[SDL_GetNumVideoDisplays_e].funcAddr;
+	SDL_GetDisplayName_t _SDL_GetDisplayName = (SDL_GetDisplayName_t) allLibs[libsdl].functions[SDL_GetDisplayName_e].funcAddr;
+
 	//Get the number of display devices attached
-	int displayCount = SDL_GetNumVideoDisplays();
+	int displayCount = _SDL_GetNumVideoDisplays();
 	if(displayCount <= 0)
 	{
 		//no display devices detected
@@ -790,7 +822,7 @@ void produceDisplayInfo(struct cylonStruct& et)
 	for(int i = 0; i < displayCount; i++)
 	{
 		//Build structs
-		const char* displayName 	 = SDL_GetDisplayName(i);
+		const char* displayName 	 = _SDL_GetDisplayName(i);
 		struct deviceStruct device 	 = buildDisplayDevice(displayName, i);
 		struct displayStruct display = buildDisplay(device, i);
 
@@ -1190,7 +1222,9 @@ struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_d
 	device.isEnabled		= 1;
 
 	//set USB fields
-	device.usb_bus			= libusb_get_bus_number(usbDev);
+	//Cast functions
+	libusb_get_bus_number_t _libusb_get_bus_number = (libusb_get_bus_number_t) allLibs[libusb].functions[libusb_get_bus_number_e].funcAddr;
+	device.usb_bus			= _libusb_get_bus_number(usbDev);
 	device.udev_deviceNumber = ERROR_INT; //maybe changes later
 
 	//grab fields from arguments
@@ -1309,7 +1343,8 @@ struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_d
 	device.isEnabled		= 1;
 
 	//set USB fields
-	device.usb_bus			= libusb_get_bus_number(usbDev);
+	libusb_get_bus_number_t _libusb_get_bus_number = (libusb_get_bus_number_t) allLibs[libusb].functions[libusb_get_bus_number_e].funcAddr;
+	device.usb_bus			= _libusb_get_bus_number(usbDev);
 	device.udev_deviceNumber = ERROR_INT; //maybe changes later
 
 	//grab fields from arguments
@@ -1601,6 +1636,11 @@ struct displayStruct buildBlankDisplay()
 
 struct displayStruct buildDisplay(struct deviceStruct device, int i)
 {
+	//Don't run this method if its lib isnt opened
+	if(!allLibs[libsdl].opened)
+	{
+		return buildBlankDisplay();
+	}
 	//Variable Declaration
 	struct displayStruct display;
 
@@ -1616,6 +1656,10 @@ struct displayStruct buildDisplay(struct deviceStruct device, int i)
 	display.rawDPIX 				= ERROR_INT;
 	display.rawDPIY 				= ERROR_INT;
 	display.resolutionScale			= ERROR_INT;
+
+	//Cast Methods
+	SDL_GetDisplayBounds_t _SDL_GetDisplayBounds = (SDL_GetDisplayBounds_t) allLibs[libsdl].functions[SDL_GetDisplayBounds_e].funcAddr;
+	SDL_GetCurrentDisplayMode_t _SDL_GetCurrentDisplayMode = (SDL_GetCurrentDisplayMode_t) allLibs[libsdl].functions[SDL_GetCurrentDisplayMode_e].funcAddr;
 
 	//TODO: add in when SDL 2.0.4 is released?
 	/*//Get DPI
@@ -1637,9 +1681,11 @@ struct displayStruct buildDisplay(struct deviceStruct device, int i)
 	}
 	 */
 
+
+
 	//Grab the display bounds
 	SDL_Rect rect;
-	int result = SDL_GetDisplayBounds(i, &rect);
+	int result = _SDL_GetDisplayBounds(i, &rect);
 	if(result < 0)
 	{
 		display.horizontalResolution 	= ERROR_INT;
@@ -1657,10 +1703,9 @@ struct displayStruct buildDisplay(struct deviceStruct device, int i)
 
 	//Grab the display mode
 	SDL_DisplayMode currentMode;
-	result = SDL_GetCurrentDisplayMode(i, &currentMode);
+	result = _SDL_GetCurrentDisplayMode(i, &currentMode);
 	if(result < 0)
 	{
-		//TODO: dont call these methods if SDL isnt open
 		display.refreshRate = ERROR_INT;
 	}
 	else

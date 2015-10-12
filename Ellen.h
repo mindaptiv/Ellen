@@ -62,6 +62,7 @@
 	typedef void    (*libusb_free_device_list_t)(libusb_device** list, int unref_devices);
 	typedef int 	(*libusb_get_device_descriptor_t)(libusb_device* device, libusb_device_descriptor* descriptor);
 	typedef int 	(*libusb_get_active_config_descriptor_t)(libusb_device* device, libusb_config_descriptor** config);
+	typedef uint8_t	(*libusb_get_bus_number_t)(libusb_device *dev);
 
 	//SDL function types
 	typedef SDL_bool 			(*SDL_IsGameController_t)(int joystick_index);
@@ -80,6 +81,10 @@
 	typedef	int					(*SDL_Init_t)(Uint32 flags);
 	typedef int					(*SDL_GL_SetAttribute_t)(SDL_GLattr attr, int value);
 	typedef const char*			(*SDL_JoystickName_t)(SDL_Joystick* joystick);
+	typedef int					(*SDL_GetNumVideoDisplays_t)(void);
+	typedef const char*			(*SDL_GetDisplayName_t)(int displayIndex);
+	typedef int					(*SDL_GetDisplayBounds_t)(int displayIndex, SDL_Rect* rect);
+	typedef int					(*SDL_GetCurrentDisplayMode_t)(int displayIndex, SDL_DisplayMode* mode);
 
 	//Constants
 	//path to profile image
@@ -102,6 +107,7 @@
 	static const char* LIBUSB_GET_ACTIVE_CONFIG_DESCRIPTOR 	= "libusb_get_active_config_descriptor";
 	static const char* LIBUSB_FREE_DEVICE_LIST 				= "libusb_free_device_list";
 	static const char* LIBUSB_EXIT 							= "libusb_exit";
+	static const char* LIBUSB_GET_BUS_NUMBER				= "libusb_get_bus_number";
 
 	static const int LIBSDL_LATEST_VERSION					= 0;
 	static const char* LIBSDL_LIB_NAME						= "libSDL2-2.0.so.0.2.0";
@@ -121,6 +127,10 @@
 	static const char* SDL_INIT								= "SDL_Init";
 	static const char* SDL_GL_SETATTRIBUTE					= "SDL_GL_SetAttribute";
 	static const char* SDL_JOYSTICKNAME						= "SDL_JoystickName";
+	static const char* SDL_GETNUMVIDEODISPLAYS				= "SDL_GetNumVideoDisplays";
+	static const char* SDL_GETDISPLAYNAME					= "SDL_GetDisplayName";
+	static const char* SDL_GETDISPLAYBOUNDS					= "SDL_GetDisplayBounds";
+	static const char* SDL_GETCURRENTDISPLAYMODE			= "SDL_GetCurrentDisplayMode";
 
 	//Structs
 	//Function loaded from library
@@ -156,6 +166,7 @@
 		libusb_get_active_config_descriptor_e,
 		libusb_free_device_list_e,
 		libusb_exit_e,
+		libusb_get_bus_number_e,
 		libusbCount
 	};
 
@@ -177,6 +188,10 @@
 		SDL_Init_e,
 		SDL_JoystickName_e,
 		SDL_GL_SetAttribute_e,
+		SDL_GetNumVideoDisplays_e,
+		SDL_GetDisplayName_e,
+		SDL_GetDisplayBounds_e,
+		SDL_GetCurrentDisplayMode_e,
 		libsdlCount
 	};
 	//END structs
