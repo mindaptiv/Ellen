@@ -1719,7 +1719,8 @@ void pollControllerEvents(struct cylonStruct& et)
 	//while there are events to be handled
 	while(_SDL_PollEvent(&event))
 	{
-	if(event.type == SDL_CONTROLLERBUTTONDOWN)
+
+		if(event.type == SDL_CONTROLLERBUTTONDOWN)
 		{
 			if(event.cbutton.state == SDL_PRESSED)
 			{
@@ -2227,7 +2228,15 @@ void pollControllerEvents(struct cylonStruct& et)
 
 			//Now recompute the player indexes
 			synchControllerDevices(et);
-		}
+		}//END if joystick removed
+
+		//WINDOW EVENTS
+		else if(event.type == SDL_WINDOWEVENT)
+		{
+			//TODO: test out once we get to drivers to see if behavior changes
+			//cout<<"WINDOW EVENT"<<endl;
+		}//END window event
+
 
 	}//END WHILE SDL_PollEvent
 }//END Poller
