@@ -807,6 +807,12 @@ void produceUsbDeviceInfo(cylonStruct& et)
 
 void produceDisplayInfo(struct cylonStruct& et)
 {
+	if (!allLibs[libsdl].opened)
+	{
+		//Get out, this method won't work without libsdl loaded!
+		return;
+	}
+
 	//Cast functions
 	SDL_GetNumVideoDisplays_t _SDL_GetNumVideoDisplays = (SDL_GetNumVideoDisplays_t) allLibs[libsdl].functions[SDL_GetNumVideoDisplays_e].funcAddr;
 	SDL_GetDisplayName_t _SDL_GetDisplayName = (SDL_GetDisplayName_t) allLibs[libsdl].functions[SDL_GetDisplayName_e].funcAddr;
@@ -1205,6 +1211,12 @@ struct deviceStruct buildBlankDevice()
 
 struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_device_descriptor descriptor)
 {
+	if (!allLibs[libusb].opened)
+	{
+		//Get out, this method won't work without libusb loaded!
+		return buildBlankDevice();
+	}
+
 	//Variable Declaration
 	struct deviceStruct device;
 
@@ -1326,6 +1338,12 @@ struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_d
 
 struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_device_descriptor descriptor, int interfaceClass )
 {
+	if (!allLibs[libusb].opened)
+	{
+		//Get out, this method won't work without libusb loaded!
+		return buildBlankDevice();
+	}
+
 	//Variable Declaration
 	struct deviceStruct device;
 
