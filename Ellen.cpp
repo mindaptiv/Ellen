@@ -14,6 +14,10 @@ using namespace std;
 //Constant for how many versions in the future we look forward for checking lib #'s
 dynLib allLibs[libCount];
 
+//keep track of if libraries have been initialized for function calls
+bool sdlInitialized = false;
+bool usbInitialized = false;
+
 libFunc libsdlFunctions[libsdlCount] =
 {
 		{
@@ -47,7 +51,7 @@ libFunc libsdlFunctions[libsdlCount] =
 		},
 
 		{
-			SDL_GAMECONTROLLERGETAPPS,
+			SDL_GAMECONTROLLERGETAXIS,
 			NULL
 		},
 
@@ -113,6 +117,11 @@ libFunc libsdlFunctions[libsdlCount] =
 
 		{
 			SDL_GETCURRENTDISPLAYMODE,
+			NULL
+		},
+
+		{
+			SDL_QUIT_METHOD,
 			NULL
 		}
 
@@ -262,6 +271,14 @@ void closeLibs()
 		}//END if error
 	}//END for
 }//END method
+
+void sdlExit()
+{
+	SDL_Quit_t _SDL_Quit = (SDL_Quit_t)allLibs[libsdl].functions[SDL_Quit_e].funcAddr;
+	_SDL_Quit();
+	sdlInitialized = false;
+}
+
 //END DYLIB stuff
 
 //Producers
@@ -495,7 +512,7 @@ void produceDeviceInfo(struct cylonStruct& et)
 void produceControllerInfo(struct cylonStruct& et)
 {
 	//don't call this if SDL didn't open
-	if(!allLibs[libsdl].opened)
+	if(!allLibs[libsdl].opened || !sdlInitialized)
 	{
 		return;
 	}
@@ -618,6 +635,7 @@ void produceUsbDeviceInfo(cylonStruct& et)
 	std::list<struct deviceStruct> detectedDevices;
 
 	//Convert method to type
+	//TODO: have bool to keep track of this or refactor builders...probably the second one (Sinew!)
 	libusb_init_t _libusb_init = (libusb_init_t) allLibs[libusb].functions[libusb_init_e].funcAddr;
 
 	//init lib & session
@@ -626,7 +644,12 @@ void produceUsbDeviceInfo(cylonStruct& et)
 	//check for errors
 	if(result < 0)
 	{
+		usbInitialized = false;
 		return;
+	}
+	else
+	{
+		usbInitialized = true;
 	}
 
 	//Convert method to type
@@ -670,6 +693,8 @@ void produceUsbDeviceInfo(cylonStruct& et)
 				//build device
 				devStrc = buildBlankDevice();
 
+				//TODO: fix this and store in list
+
 				//Do nothing else for this device
 				continue;
 			}//END if error
@@ -685,6 +710,8 @@ void produceUsbDeviceInfo(cylonStruct& et)
 			{
 				//build device
 				devStrc = buildUsbDevice(device, descriptor);
+
+				//TODO: fix this and store in list
 
 				//do nothing else for this device
 				continue;
@@ -707,12 +734,6 @@ void produceUsbDeviceInfo(cylonStruct& et)
 
 		//free the list
 		_libusb_free_device_list(devices, 1);
-
-		//convert method to type
-		libusb_exit_t _libusb_exit = (libusb_exit_t) allLibs[libusb].functions[libusb_exit_e].funcAddr;
-
-		//exit from lib
-		_libusb_exit(context);
 
 		//grab the lsusb output (if available)
 		//Variable Declaration
@@ -803,11 +824,18 @@ void produceUsbDeviceInfo(cylonStruct& et)
 			et.detectedDevices.push_back(detectedDevices.front());
 			detectedDevices.pop_front();
 		}//END WHILE
+
+	//convert method to type
+	libusb_exit_t _libusb_exit = (libusb_exit_t) allLibs[libusb].functions[libusb_exit_e].funcAddr;
+
+	//exit from lib
+	_libusb_exit(context);
+	usbInitialized = false;
 }//END produce USB device info
 
 void produceDisplayInfo(struct cylonStruct& et)
 {
-	if (!allLibs[libsdl].opened)
+	if (!allLibs[libsdl].opened || !sdlInitialized)
 	{
 		//Get out, this method won't work without libsdl loaded!
 		return;
@@ -1040,6 +1068,7 @@ void produceStorageInfo(struct cylonStruct& et)
 							struct storageStruct storage = buildStorage(device, dirName_string, freeSpace, totalSpace);
 
 							//put into lists
+							//TODO: add more info to the deviceStruct?
 							et.storages.push_back(storage);
 							device.storageIndex = et.storages.size() - 1;
 							et.detectedDevices.push_back(device);
@@ -1058,6 +1087,7 @@ void produceStorageInfo(struct cylonStruct& et)
 						if(currentOrParentDir == false)
 						{
 							//build structs and store them in lists
+							//TODO: run statvfs and verify storage sizes
 							struct deviceStruct device = buildStorageDevice(et.username);
 							struct storageStruct storage = buildStorage(device, directory_string, freeSpace, totalSpace);
 
@@ -1211,7 +1241,7 @@ struct deviceStruct buildBlankDevice()
 
 struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_device_descriptor descriptor)
 {
-	if (!allLibs[libusb].opened)
+	if (!allLibs[libusb].opened || !usbInitialized)
 	{
 		//Get out, this method won't work without libusb loaded!
 		return buildBlankDevice();
@@ -1338,7 +1368,7 @@ struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_d
 
 struct deviceStruct buildUsbDevice(struct libusb_device* usbDev, struct libusb_device_descriptor descriptor, int interfaceClass )
 {
-	if (!allLibs[libusb].opened)
+	if (!allLibs[libusb].opened || !usbInitialized)
 	{
 		//Get out, this method won't work without libusb loaded!
 		return buildBlankDevice();
@@ -1655,7 +1685,7 @@ struct displayStruct buildBlankDisplay()
 struct displayStruct buildDisplay(struct deviceStruct device, int i)
 {
 	//Don't run this method if its lib isnt opened
-	if(!allLibs[libsdl].opened)
+	if(!allLibs[libsdl].opened || !sdlInitialized)
 	{
 		return buildBlankDisplay();
 	}
@@ -1760,7 +1790,7 @@ struct storageStruct buildStorage(struct deviceStruct device, std::string path, 
 void pollControllerEvents(struct cylonStruct& et)
 {
 	//don't call this if SDL didn't open
-	if(!allLibs[libsdl].opened)
+	if(!allLibs[libsdl].opened || !sdlInitialized)
 	{
 		return;
 	}
@@ -2217,6 +2247,7 @@ void pollControllerEvents(struct cylonStruct& et)
 					if((int)iterator->id == (int)_SDL_JoystickInstanceID(joystick))
 					{
 						existingInstance = true;
+						break;
 					}//END if Id's match
 				}//END iterator
 
@@ -2315,7 +2346,7 @@ void pollControllerEvents(struct cylonStruct& et)
 uint16_t pollButtons(uint16_t buttons, SDL_Event event, bool isGameController)
 {
 	//don't call this if SDL didn't open
-	if(!allLibs[libsdl].opened)
+	if(!allLibs[libsdl].opened || !sdlInitialized)
 	{
 		return buttons;
 	}
@@ -2561,7 +2592,7 @@ bool isPSX(std::string gamepadName)
 void synchControllerDevices(struct cylonStruct& et)
 {
 	//don't call this if SDL didn't open
-	if(!allLibs[libsdl].opened)
+	if(!allLibs[libsdl].opened || !sdlInitialized)
 	{
 		return;
 	}
@@ -2637,6 +2668,7 @@ void sdlInit()
 	//don't call this if SDL didn't open
 	if(!allLibs[libsdl].opened)
 	{
+		sdlInitialized = false;
 		return;
 	}
 
@@ -2654,7 +2686,7 @@ void sdlInit()
 	if(result < 0)
 	{
 		//init failed
-		printf("Warning: SDL Init failed");
+		sdlInitialized = false;
 		return;
 	}
 
@@ -2663,7 +2695,7 @@ void sdlInit()
 	if(result < 0)
 	{
 		//init failed
-		printf("Warning: SDL GL failed");
+		sdlInitialized = false;
 		return;
 	}
 
@@ -2671,7 +2703,11 @@ void sdlInit()
 	SDL_Window* sdlWindow = _SDL_CreateWindow("test", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 100, 100, SDL_WINDOW_HIDDEN);
 	if(sdlWindow == NULL)
 	{
-		printf("Warning: no SDL Window created");
+		sdlInitialized = false;
+		return;
 	}//END if no window
+
+	//If we made it this far, go ahead and say sdl was initialized correctly
+	sdlInitialized = true;
 }//END method
 //END Controllers

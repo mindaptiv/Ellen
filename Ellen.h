@@ -85,6 +85,7 @@
 	typedef const char*			(*SDL_GetDisplayName_t)(int displayIndex);
 	typedef int					(*SDL_GetDisplayBounds_t)(int displayIndex, SDL_Rect* rect);
 	typedef int					(*SDL_GetCurrentDisplayMode_t)(int displayIndex, SDL_DisplayMode* mode);
+	typedef void				(*SDL_Quit_t)(void);
 
 	//Constants
 	//path to profile image
@@ -117,7 +118,7 @@
 	static const char* SDL_GAMECONTROLLEROPEN				= "SDL_GameControllerOpen";
 	static const char* SDL_GAMECONTROLLERNAME				= "SDL_GameControllerName";
 	static const char* SDL_JOYSTICKINSTANCEID				= "SDL_JoystickInstanceID";
-	static const char* SDL_GAMECONTROLLERGETAPPS			= "SDL_GameControllerGetAxis";
+	static const char* SDL_GAMECONTROLLERGETAXIS			= "SDL_GameControllerGetAxis";
 	static const char* SDL_POLLEVENT						= "SDL_PollEvent";
 	static const char* SDL_GAMECONTROLLERNAMEFORINDEX		= "SDL_GameControllerNameForIndex";
 	static const char* SDL_JOYSTICKNAMEFORINDEX				= "SDL_JoystickNameForIndex";
@@ -131,6 +132,7 @@
 	static const char* SDL_GETDISPLAYNAME					= "SDL_GetDisplayName";
 	static const char* SDL_GETDISPLAYBOUNDS					= "SDL_GetDisplayBounds";
 	static const char* SDL_GETCURRENTDISPLAYMODE			= "SDL_GetCurrentDisplayMode";
+	static const char* SDL_QUIT_METHOD						= "SDL_Quit";
 
 	//Structs
 	//Function loaded from library
@@ -192,6 +194,7 @@
 		SDL_GetDisplayName_e,
 		SDL_GetDisplayBounds_e,
 		SDL_GetCurrentDisplayMode_e,
+		SDL_Quit_e,
 		libsdlCount
 	};
 	//END structs
@@ -201,6 +204,8 @@
 	void fillTable();
 	void openLibs();
 	void closeLibs();
+	void sdlExit();
+	void usbExit();
 
 	//Producers
 	void produceUserProfile(struct cylonStruct& et);
