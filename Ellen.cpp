@@ -635,7 +635,6 @@ void produceUsbDeviceInfo(cylonStruct& et)
 	std::list<struct deviceStruct> detectedDevices;
 
 	//Convert method to type
-	//TODO: have bool to keep track of this or refactor builders...probably the second one (Sinew!)
 	libusb_init_t _libusb_init = (libusb_init_t) allLibs[libusb].functions[libusb_init_e].funcAddr;
 
 	//init lib & session
@@ -693,7 +692,8 @@ void produceUsbDeviceInfo(cylonStruct& et)
 				//build device
 				devStrc = buildBlankDevice();
 
-				//TODO: fix this and store in list
+				//place deviceStruct in the back of the devices list
+				detectedDevices.insert(detectedDevices.end(), devStrc);
 
 				//Do nothing else for this device
 				continue;
@@ -711,7 +711,8 @@ void produceUsbDeviceInfo(cylonStruct& et)
 				//build device
 				devStrc = buildUsbDevice(device, descriptor);
 
-				//TODO: fix this and store in list
+				//place deviceStruct in the back of the devices list
+				detectedDevices.insert(detectedDevices.end(), devStrc);
 
 				//do nothing else for this device
 				continue;
@@ -1068,7 +1069,6 @@ void produceStorageInfo(struct cylonStruct& et)
 							struct storageStruct storage = buildStorage(device, dirName_string, freeSpace, totalSpace);
 
 							//put into lists
-							//TODO: add more info to the deviceStruct?
 							et.storages.push_back(storage);
 							device.storageIndex = et.storages.size() - 1;
 							et.detectedDevices.push_back(device);
