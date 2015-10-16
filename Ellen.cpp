@@ -1087,7 +1087,6 @@ void produceStorageInfo(struct cylonStruct& et)
 						if(currentOrParentDir == false)
 						{
 							//build structs and store them in lists
-							//TODO: run statvfs and verify storage sizes
 							struct statvfs buf;
 							int result = statvfs(dirName_char, &buf);
 
