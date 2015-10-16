@@ -1088,14 +1088,29 @@ void produceStorageInfo(struct cylonStruct& et)
 						{
 							//build structs and store them in lists
 							//TODO: run statvfs and verify storage sizes
-							struct deviceStruct device = buildStorageDevice(et.username);
-							struct storageStruct storage = buildStorage(device, directory_string, freeSpace, totalSpace);
+							struct statvfs buf;
+							int result = statvfs(dirName_char, &buf);
 
-							//Add to lists
-							et.storages.push_back(storage);
-							device.storageIndex = et.storages.size() - 1;
-							et.detectedDevices.push_back(device);
-							et.storages.back().superDevice = et.detectedDevices.back();
+							//if successfully opened
+							if(result == 0)
+							{
+								//grab storage specs
+								uint64_t freeSpace = (uint64_t)(buf.f_bsize * buf.f_bfree);
+								uint64_t totalSpace = (uint64_t)(buf.f_bsize * buf.f_blocks);
+
+								//if the numbers check out
+								if((freeSpace >= 0) && (totalSpace > 0) && (freeSpace <= totalSpace) )
+								{
+									struct deviceStruct device = buildStorageDevice(et.username);
+									struct storageStruct storage = buildStorage(device, directory_string, freeSpace, totalSpace);
+
+									//Add to lists
+									et.storages.push_back(storage);
+									device.storageIndex = et.storages.size() - 1;
+									et.detectedDevices.push_back(device);
+									et.storages.back().superDevice = et.detectedDevices.back();
+								}//END If valid sizes
+							}//END if statvfs successful
 						}//END if NOT current or parent dir
 					}//END if file doesn't fit MTP profile
 				}//END if a directory style object
