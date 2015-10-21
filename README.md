@@ -8,8 +8,8 @@ Ellen is a Linux (LSB supporting distros in particular) targeted library for gat
 
 ##Tested Distros
 The following is a list of confirmed distros that Ellen was able to run successfully on:
-* Ubuntu 14.04 LTS
-* Don't see your distro here?  Contact us and let us know!
+* Ubuntu 14.04 LTS (Barebones & Marrow releases)
+* Ubuntu 15.04 (Marrow release only)
 
 ##Documentation  
 For more detailed information, please visit the [Ellen wiki.](github.com/mindaptiv/ellen/wiki)  
